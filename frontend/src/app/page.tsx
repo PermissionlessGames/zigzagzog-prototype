@@ -2,9 +2,30 @@
 
 import React, { useState } from 'react';
 import { Shape } from './components/Shape';
+import { GameSpectator } from './components/GameSpectator';
+
+type Screen = 'title' | 'game';
 
 export default function Home() {
+  const [currentScreen, setCurrentScreen] = useState<Screen>('title');
   const [hoveredShape, setHoveredShape] = useState<string | null>(null);
+
+  // Temporary mock game state
+  const mockGameState = {
+    status: 'buying-in' as const,
+    currentRound: 1,
+    totalPlayers: 10,
+    remainingPlayers: 10,
+  };
+
+  const handleBuyIn = () => {
+    console.log('Buy in clicked');
+    // Will implement wallet connection and contract interaction later
+  };
+
+  if (currentScreen === 'game') {
+    return <GameSpectator gameState={mockGameState} onBuyIn={handleBuyIn} />;
+  }
 
   return (
     <div className="container">
@@ -25,7 +46,12 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <button className="play-button">Play Now</button>
+        <button 
+          className="play-button"
+          onClick={() => setCurrentScreen('game')}
+        >
+          Play Now
+        </button>
       </div>
     </div>
   );
