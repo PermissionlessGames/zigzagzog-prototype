@@ -133,38 +133,43 @@ a {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2rem);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .game-info {
   background: var(--card-bg);
-  border: 4px solid var(--outline);
-  border-radius: 8px;
-  padding: 2rem;
-  margin-bottom: 2rem;
+  border: clamp(2px, 0.5vw, 4px) solid var(--outline);
+  border-radius: clamp(4px, 1vw, 8px);
+  padding: clamp(1rem, 4vw, 2rem);
+  margin-bottom: clamp(1rem, 4vw, 2rem);
 }
 
 .game-status {
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 6vw, 2rem);
   color: var(--outline-active);
-  margin-bottom: 1rem;
+  margin-bottom: clamp(0.5rem, 2vw, 1rem);
   text-transform: capitalize;
 }
 
 .player-count {
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 4vw, 1.2rem);
   color: var(--outline);
 }
 
 .buy-in-button {
-  padding: 1rem 3rem;
-  font-size: 1.5rem;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
   background: var(--card-bg);
-  border: 4px solid var(--outline-active);
-  border-radius: 8px;
+  border: clamp(2px, 0.5vw, 4px) solid var(--outline-active);
+  border-radius: clamp(4px, 1vw, 8px);
   color: var(--outline-active);
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .buy-in-button:hover {
@@ -186,5 +191,20 @@ a {
   .play-button {
     margin-top: 1rem;
     padding: 0.75rem 2rem;
+  }
+
+  .game-spectator {
+    padding: 1rem;
+  }
+
+  .game-info {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .buy-in-button {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
   }
 }
