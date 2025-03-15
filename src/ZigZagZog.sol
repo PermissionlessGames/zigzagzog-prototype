@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-contract ZigZagZog {
+import {EIP712} from "../lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
+import {IERC721} from "../lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import {SignatureChecker} from "../lib/openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
+
+contract ZigZagZog is EIP712 {
+    string public constant ZigZagZogVersion = "0.1.0";
+    uint256 public HandCost;
+    uint64 public GameLength;
+
     struct Game {
         uint256 startTimestamp;
         uint256 roundNumber;
@@ -18,9 +26,6 @@ contract ZigZagZog {
     // Game number => round number => player address => player commitment
     mapping(uint256 => mapping(uint256 => mapping(address => bytes))) playerCommittment;
 
-    uint256 public constant handCost = 1000;
-    uint64 public constant gameLength = 30;
-
     uint256 currentGameNumber = 0;
 
     mapping(uint256 => Game) public GameState;
@@ -31,17 +36,26 @@ contract ZigZagZog {
         uint256 indexed roundNumber
     );
 
+    constructor(
+        uint256 handCost,
+        uint64 gameLength
+    ) EIP712("ZigZagZog", ZigZagZogVersion) {
+        HandCost = handCost;
+        GameLength = gameLength;
+        // Deployed event
+    }
+
     function buyHands() external payable {
         if (
             block.timestamp >
-            GameState[currentGameNumber].startTimestamp + gameLength
+            GameState[currentGameNumber].startTimestamp + GameLength
         ) {
             currentGameNumber++;
             GameState[currentGameNumber].startTimestamp = block.timestamp;
             GameState[currentGameNumber].roundNumber = 1;
         }
 
-        uint256 handCount = msg.value / handCost;
+        uint256 handCount = msg.value / HandCost;
         require(
             handCount > 0,
             "ZigZagZog.buyHands(): insufficient value to buy a hand."
@@ -105,52 +119,22 @@ contract ZigZagZog {
             "ZigZagZog.revealChoices: player already revealed"
         );
 
-        // bytes32 pitchMessageHash = pitchHash(
-        //     nonce,
-        //     speed,
-        //     vertical,
-        //     horizontal
-        // );
-        // require(
-        //     SignatureChecker.isValidSignatureNow(
-        //         msg.sender,
-        //         pitchMessageHash,
-        //         session.pitcherCommit
-        //     ),
-        //     "Fullcount.revealPitch: invalid signature"
-        // );
+        bytes32 choicesMessageHash = choicesHash(
+            nonce,
+            numCircles,
+            numSquares,
+            numTriangles
+        );
+        require(
+            SignatureChecker.isValidSignatureNow(
+                msg.sender,
+                choicesMessageHash,
+                playerCommittment[gameNumber][roundNumber][msg.sender]
+            ),
+            "ZigZagZog.revealChoices: invalid signature"
+        );
 
-        // session.didPitcherReveal = true;
-        // session.pitcherReveal = Pitch(nonce, speed, vertical, horizontal);
-
-        // emit PitchRevealed(sessionID, session.pitcherReveal);
-
-        // if (session.didBatterReveal) {
-        //     Outcome outcome = resolve(
-        //         session.pitcherReveal,
-        //         session.batterReveal
-        //     );
-        //     emit SessionResolved(
-        //         sessionID,
-        //         outcome,
-        //         session.pitcherNFT.nftAddress,
-        //         session.pitcherNFT.tokenID,
-        //         session.batterNFT.nftAddress,
-        //         session.batterNFT.tokenID
-        //     );
-
-        //     session.outcome = outcome;
-
-        //     StakedSession[session.batterNFT.nftAddress][
-        //         session.batterNFT.tokenID
-        //     ] = 0;
-        //     session.batterLeftSession = true;
-        //     StakedSession[session.pitcherNFT.nftAddress][
-        //         session.pitcherNFT.tokenID
-        //     ] = 0;
-        //     session.pitcherLeftSession = true;
-
-        //     _progressAtBat(sessionID, true);
-        // }
+        // Do things
+        playerHasRevealed[gameNumber][roundNumber][msg.sender] = true;
     }
 }
