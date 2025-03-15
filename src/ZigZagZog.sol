@@ -50,6 +50,26 @@ contract ZigZagZog {
         handsSurviving[currentGameNumber][msg.sender] = handCount;
     }
 
+    function choicesHash(
+        uint256 nonce,
+        uint256 numCircles,
+        uint256 numSquares,
+        uint256 numTriangles
+    ) public view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "ChoicesMessage(uint256 nonce,uint256 numCircles,uint256 numSquares,uint256 numTriangles)"
+                ),
+                nonce,
+                uint256(numCircles),
+                uint256(numSquares),
+                uint256(numTriangles)
+            )
+        );
+        return _hashTypedDataV4(structHash);
+    }
+
     function commitChoices(
         uint256 gameNumber,
         uint256 roundNumber,
