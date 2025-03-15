@@ -48,17 +48,7 @@ body {
   margin: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
-
+/* Title Screen */
 .container {
   min-height: 100vh;
   display: flex;
@@ -69,7 +59,7 @@ a {
 }
 
 .title {
-  font-size: clamp(2rem, 8vw, 3rem);
+  font-size: 3rem;
   color: var(--outline-active);
   margin-bottom: 2rem;
 }
@@ -77,18 +67,17 @@ a {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: clamp(0.5rem, 2vw, 1rem);
-  width: 100%;
+  gap: 1rem;
   max-width: 600px;
   margin: 0 auto;
-  padding: clamp(0.5rem, 2vw, 1rem);
+  padding: 1rem;
 }
 
 .card {
   aspect-ratio: 3/4;
   background: var(--card-bg);
-  border: clamp(2px, 0.5vw, 4px) solid var(--outline);
-  border-radius: clamp(4px, 1vw, 8px);
+  border: 4px solid var(--outline);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,18 +89,12 @@ a {
   border-color: var(--outline-active);
 }
 
-.card-text {
-  font-size: 1.5rem;
-  color: var(--primary-light);
-  text-transform: capitalize;
-}
-
 .play-button {
-  margin-top: clamp(1rem, 4vw, 2rem);
-  padding: clamp(0.75rem, 2vw, 1rem) clamp(2rem, 4vw, 3rem);
-  font-size: clamp(1.25rem, 4vw, 1.5rem);
-  border: clamp(2px, 0.5vw, 4px) solid var(--outline-active);
-  border-radius: clamp(4px, 1vw, 8px);
+  margin-top: 2rem;
+  padding: 1rem 3rem;
+  font-size: 1.5rem;
+  border: 4px solid var(--outline-active);
+  border-radius: 8px;
   cursor: pointer;
   animation: 
     buttonBlink 0.6s step-end infinite,
@@ -128,83 +111,72 @@ a {
   transition: transform 0.2s;
 }
 
-/* Game Spectator Styles */
-.game-spectator {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: clamp(1rem, 4vw, 2rem);
+/* Game Status Display */
+.game-status-display {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
+  padding: 2rem;
 }
 
-.game-info {
-  background: var(--card-bg);
-  border: clamp(2px, 0.5vw, 4px) solid var(--outline);
-  border-radius: clamp(4px, 1vw, 8px);
-  padding: clamp(1rem, 4vw, 2rem);
-  margin-bottom: clamp(1rem, 4vw, 2rem);
+.game-status-title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
-.game-status {
-  font-size: clamp(1.5rem, 6vw, 2rem);
-  color: var(--outline-active);
-  margin-bottom: clamp(0.5rem, 2vw, 1rem);
-  text-transform: capitalize;
-}
-
-.player-count {
-  font-size: clamp(1rem, 4vw, 1.2rem);
-  color: var(--outline);
+.game-status-players {
+  font-size: 1.5rem;
+  margin-bottom: 3rem;
+  text-align: center;
 }
 
 .buy-in-button {
-  padding: clamp(0.75rem, 2vw, 1rem) clamp(2rem, 4vw, 3rem);
-  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-size: 2rem;
+  padding: 1rem 3rem;
   background: var(--card-bg);
-  border: clamp(2px, 0.5vw, 4px) solid var(--outline-active);
-  border-radius: clamp(4px, 1vw, 8px);
+  border: 4px solid var(--outline-active);
+  border-radius: 8px;
   color: var(--outline-active);
   cursor: pointer;
   transition: all 0.2s;
-  white-space: nowrap;
 }
 
 .buy-in-button:hover {
   background: var(--outline-active);
   color: var(--card-bg);
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
-@media (max-width: 480px) {
-  .container {
-    padding: 0.5rem;
+@media (max-width: 768px) {
+  .title {
+    font-size: 2rem;
   }
-  
+
   .card-grid {
     gap: 0.5rem;
     padding: 0.5rem;
   }
-  
+
   .play-button {
     margin-top: 1rem;
     padding: 0.75rem 2rem;
   }
 
-  .game-spectator {
-    padding: 1rem;
+  .game-status-title {
+    font-size: 2rem;
   }
 
-  .game-info {
-    padding: 1rem;
-    margin-bottom: 1rem;
+  .game-status-players {
+    font-size: 1.25rem;
   }
 
   .buy-in-button {
+    font-size: 1.5rem;
+    padding: 0.75rem 2rem;
     width: 100%;
     max-width: 300px;
-    margin: 0 auto;
   }
 }
