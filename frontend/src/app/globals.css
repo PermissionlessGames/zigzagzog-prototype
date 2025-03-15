@@ -124,3 +124,48 @@ a {
   transform: scale(1.05);
   transition: transform 0.2s;
 }
+
+/* Game Spectator Styles */
+.game-spectator {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.game-info {
+  background: var(--card-bg);
+  border: 4px solid var(--outline);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.game-status {
+  font-size: 2rem;
+  color: var(--outline-active);
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+}
+
+.player-count {
+  font-size: 1.2rem;
+  color: var(--outline);
+}
+
+.buy-in-button {
+  padding: 1rem 3rem;
+  font-size: 1.5rem;
+  background: var(--card-bg);
+  border: 4px solid var(--outline-active);
+  border-radius: 8px;
+  color: var(--outline-active);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buy-in-button:hover {
+  background: var(--outline-active);
+  color: var(--card-bg);
+  transform: scale(1.05);
+}
