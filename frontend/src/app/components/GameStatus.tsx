@@ -27,7 +27,7 @@ export function GameStatus({
         <p className="game-status-pot">{potSize} G7 in pot</p>
         {lastGameMultiple && (
           <p className="game-status-multiples">
-            Last game winner received {lastGameMultiple}x
+            Last game return on winning hands: {lastGameMultiple}x
           </p>
         )}
       </div>
