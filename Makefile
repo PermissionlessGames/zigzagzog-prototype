@@ -16,11 +16,11 @@ src/ZigZagZog.sol:
 	jq .abi out/ZigZagZog.sol/ZigZagZog.json | solface -annotations -license UNLICENSED -name IZigZagZog -pragma "^0.8.13" >src/IZigZagZog.sol
 
 clean: clean-contracts unbind
-	rm -f fcplayer
+	rm -f zzz
 
 clean-contracts:
 	rm -rf out/
-	rm -f src/IFullcountPlayer.sol
+	rm -f src/IZigZagZog.sol
 
 rebuild: clean build
 
@@ -28,7 +28,7 @@ rebuild-contracts: clean-contracts build-contracts
 
 retest: clean test
 
-out/FullcountPlayer.sol/FullcountPlayerFacet.json: build-contracts
+out/ZigZagZog.sol/ZigZagZog.json: build-contracts
 
 bindings/zigzagzog/ZigZagZog.go: build-contracts
 	mkdir -p bindings/zigzagzog

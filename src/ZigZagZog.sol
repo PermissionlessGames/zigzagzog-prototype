@@ -7,18 +7,26 @@ import {SignatureChecker} from "../lib/openzeppelin-contracts/contracts/utils/cr
 
 contract ZigZagZog is EIP712 {
     string public constant ZigZagZogVersion = "0.1.0";
-    uint256 public HandCost;
-    uint64 public GameLength;
+    uint256 public playCost;
+    uint64 public commitDuration;
+    uint64 public revealDuration;
+
+    enum Phase {
+        None,
+        Commit,
+        Reveal
+    }
 
     struct Game {
-        uint256 startTimestamp;
+        uint256 gameTimestamp;
         uint256 roundNumber;
+        uint256 roundTimestamp;
     }
 
     // Game number => player address => number of hands purchased
-    mapping(uint256 => mapping(address => uint256)) public handsPurchased;
+    mapping(uint256 => mapping(address => uint256)) public purchasedPlays;
     // Game number => player address => number of hands remaining
-    mapping(uint256 => mapping(address => uint256)) handsSurviving;
+    mapping(uint256 => mapping(address => uint256)) survivingPlays;
     // Game number => round number => player address => player has committed
     mapping(uint256 => mapping(uint256 => mapping(address => bool)))
         public playerHasCommitted;
@@ -39,31 +47,35 @@ contract ZigZagZog is EIP712 {
     );
 
     constructor(
-        uint256 handCost,
-        uint64 gameLength
+        uint256 _playCost,
+        uint64 _commitDuration,
+        uint64 _revealDuration
     ) EIP712("ZigZagZog", ZigZagZogVersion) {
-        HandCost = handCost;
-        GameLength = gameLength;
+        playCost = _playCost;
+        commitDuration = _commitDuration;
+        revealDuration = _revealDuration;
         // Deployed event
     }
 
-    function buyHands() external payable {
+    function buyPlays() external payable {
         if (
             block.timestamp >
-            GameState[currentGameNumber].startTimestamp + GameLength
+            GameState[currentGameNumber].gameTimestamp + commitDuration ||
+            currentGameNumber == 0
         ) {
             currentGameNumber++;
-            GameState[currentGameNumber].startTimestamp = block.timestamp;
+            GameState[currentGameNumber].gameTimestamp = block.timestamp;
             GameState[currentGameNumber].roundNumber = 1;
+            GameState[currentGameNumber].roundTimestamp = block.timestamp;
         }
 
-        uint256 handCount = msg.value / HandCost;
+        uint256 numPlays = msg.value / playCost;
         require(
-            handCount > 0,
-            "ZigZagZog.buyHands(): insufficient value to buy a hand."
+            numPlays > 0,
+            "ZigZagZog.buyPlays(): insufficient value to buy a play."
         );
-        handsPurchased[currentGameNumber][msg.sender] = handCount;
-        handsSurviving[currentGameNumber][msg.sender] = handCount;
+        purchasedPlays[currentGameNumber][msg.sender] = numPlays;
+        survivingPlays[currentGameNumber][msg.sender] = numPlays;
     }
 
     function choicesHash(
@@ -95,8 +107,23 @@ contract ZigZagZog is EIP712 {
         uint256 roundNumber,
         bytes memory signature
     ) external {
-        // Check state
-        // Game storage game = GameState[gameNumber];
+        Game storage game = GameState[gameNumber];
+
+        if (roundNumber > game.roundNumber) {
+            require(
+                (block.timestamp >
+                    game.roundTimestamp + commitDuration + revealDuration) &&
+                    (roundNumber - game.roundNumber == 1),
+                "ZigZagZog.commitChoices: round hasn't started yet"
+            );
+            game.roundNumber++;
+            game.roundTimestamp = block.timestamp;
+        }
+
+        require(
+            block.timestamp <= game.roundTimestamp + commitDuration,
+            "ZigZagZog.commitChoices: commit window has passed"
+        );
 
         require(
             !playerHasCommitted[gameNumber][roundNumber][msg.sender],
