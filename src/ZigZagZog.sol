@@ -16,17 +16,19 @@ contract ZigZagZog is EIP712 {
     }
 
     // Game number => player address => number of hands purchased
-    mapping(uint256 => mapping(address => uint256)) handsPurchased;
+    mapping(uint256 => mapping(address => uint256)) public handsPurchased;
     // Game number => player address => number of hands remaining
     mapping(uint256 => mapping(address => uint256)) handsSurviving;
     // Game number => round number => player address => player has committed
-    mapping(uint256 => mapping(uint256 => mapping(address => bool))) playerHasCommitted;
+    mapping(uint256 => mapping(uint256 => mapping(address => bool)))
+        public playerHasCommitted;
     // Game number => round number => player address => player has revealed
-    mapping(uint256 => mapping(uint256 => mapping(address => bool))) playerHasRevealed;
+    mapping(uint256 => mapping(uint256 => mapping(address => bool)))
+        public playerHasRevealed;
     // Game number => round number => player address => player commitment
     mapping(uint256 => mapping(uint256 => mapping(address => bytes))) playerCommittment;
 
-    uint256 currentGameNumber = 0;
+    uint256 public currentGameNumber = 0;
 
     mapping(uint256 => Game) public GameState;
 
@@ -66,6 +68,8 @@ contract ZigZagZog is EIP712 {
 
     function choicesHash(
         uint256 nonce,
+        uint256 gameNumber,
+        uint256 roundNumber,
         uint256 numCircles,
         uint256 numSquares,
         uint256 numTriangles
@@ -73,12 +77,14 @@ contract ZigZagZog is EIP712 {
         bytes32 structHash = keccak256(
             abi.encode(
                 keccak256(
-                    "ChoicesMessage(uint256 nonce,uint256 numCircles,uint256 numSquares,uint256 numTriangles)"
+                    "ChoicesMessage(uint256 nonce,uint256 gameNumber,uint256 roundNumber,uint256 numCircles,uint256 numSquares,uint256 numTriangles)"
                 ),
                 nonce,
-                uint256(numCircles),
-                uint256(numSquares),
-                uint256(numTriangles)
+                gameNumber,
+                roundNumber,
+                numCircles,
+                numSquares,
+                numTriangles
             )
         );
         return _hashTypedDataV4(structHash);
@@ -121,6 +127,8 @@ contract ZigZagZog is EIP712 {
 
         bytes32 choicesMessageHash = choicesHash(
             nonce,
+            gameNumber,
+            roundNumber,
             numCircles,
             numSquares,
             numTriangles
