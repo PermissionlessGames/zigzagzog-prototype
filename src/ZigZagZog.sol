@@ -23,9 +23,11 @@ contract ZigZagZog is EIP712 {
         uint256 roundTimestamp;
     }
 
+    // Game number => value staked into game
+    mapping(uint256 => uint256) public gameBalance;
     // Game number => player address => number of hands purchased
     mapping(uint256 => mapping(address => uint256)) public purchasedPlays;
-    // Game number => player address => number of hands remaining
+    // Game number => player address => number of plays remaining
     mapping(uint256 => mapping(address => uint256)) survivingPlays;
     // Game number => round number => player address => player has committed
     mapping(uint256 => mapping(uint256 => mapping(address => bool)))
@@ -35,6 +37,12 @@ contract ZigZagZog is EIP712 {
         public playerHasRevealed;
     // Game number => round number => player address => player commitment
     mapping(uint256 => mapping(uint256 => mapping(address => bytes))) playerCommittment;
+    // Game number => round number => # of circles revealed
+    mapping(uint256 => mapping(uint256 => uint256)) circlesRevealed;
+    // Game number => round number => # of squares revealed
+    mapping(uint256 => mapping(uint256 => uint256)) squaredRevealed;
+    // Game number => round number => # of triangles revealed
+    mapping(uint256 => mapping(uint256 => uint256)) trianglesRevealed;
 
     uint256 public currentGameNumber = 0;
 
@@ -77,7 +85,9 @@ contract ZigZagZog is EIP712 {
         purchasedPlays[currentGameNumber][msg.sender] = numPlays;
         survivingPlays[currentGameNumber][msg.sender] = numPlays;
 
-        uint256 excess = msg.value - numPlays * playCost;
+        uint256 stakedAmount = numPlays * playCost;
+        gameBalance[currentGameNumber] = stakedAmount;
+        uint256 excess = msg.value - stakedAmount;
         if (excess > 0) {
             payable(msg.sender).transfer(excess); // Refund excess native token
         }
@@ -149,12 +159,20 @@ contract ZigZagZog is EIP712 {
         uint256 numSquares,
         uint256 numTriangles
     ) external {
-        // Check state
-        // Game storage game = GameState[gameNumber];
-
         require(
             !playerHasRevealed[gameNumber][roundNumber][msg.sender],
             "ZigZagZog.revealChoices: player already revealed"
+        );
+
+        Game memory game = GameState[gameNumber];
+        require(
+            block.timestamp > game.roundTimestamp + commitDuration,
+            "ZigZagZog.revealChoices: reveal phase has not yet begun"
+        );
+        require(
+            block.timestamp <=
+                game.roundTimestamp + commitDuration + revealDuration,
+            "ZigZagZog.revealChoices: reveal phase has ended"
         );
 
         bytes32 choicesMessageHash = choicesHash(
@@ -174,7 +192,16 @@ contract ZigZagZog is EIP712 {
             "ZigZagZog.revealChoices: invalid signature"
         );
 
-        // Do things
+        require(
+            numCircles + numSquares + numTriangles ==
+                survivingPlays[gameNumber][msg.sender],
+            "ZigZagZog.revealChoices: insufficient remaining plays"
+        );
+
+        circlesRevealed[gameNumber][roundNumber] += numCircles;
+        squaredRevealed[gameNumber][roundNumber] += numSquares;
+        trianglesRevealed[gameNumber][roundNumber] += numTriangles;
+
         playerHasRevealed[gameNumber][roundNumber][msg.sender] = true;
     }
 }
