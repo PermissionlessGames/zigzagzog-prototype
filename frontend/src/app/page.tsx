@@ -26,7 +26,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <button className="play-button">
+        <button className="blink-button">
           <Link href="/game" style={{ color: 'inherit', textDecoration: 'none' }}>
             Play Now
           </Link>

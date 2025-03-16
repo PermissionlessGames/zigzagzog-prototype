@@ -31,7 +31,7 @@ export function GameStatus({
           </p>
         )}
       </div>
-      <button onClick={onBuyIn} className="buy-in-button">
+      <button onClick={onBuyIn} className="blink-button">
         Buy in: {buyInAmount} G7 / hand
       </button>
     </div>
