@@ -5,9 +5,9 @@ import { GameOverview } from '../components/GameOverview';
 
 // Mock game data - will be replaced with contract data
 const mockGameData = {
-  gameNumber: 1,
-  playerCount: 8,
-  potSize: 80,
+  gameNumber: 872,
+  playerCount: 82945,
+  potSize: 92384733,
   lastGameMultiple: 2.5,
   buyInAmount: 10
 };

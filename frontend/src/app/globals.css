@@ -91,24 +91,20 @@ body {
 
 .blink-button {
   margin-top: 2rem;
-  padding: 1rem 3rem;
-  font-size: 1.5rem;
-  border: 4px solid var(--outline-active);
-  border-radius: 8px;
+  padding: 1.5rem 3rem;
+  font-size: 2rem;
+  background: var(--outline-active);
+  color: var(--card-bg);
+  border: none;
+  border-radius: 16px;
   cursor: pointer;
-  animation: 
-    buttonBlink 0.6s step-end infinite,
-    shake 0.6s ease-in-out infinite;
-  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .blink-button:hover {
-  animation: none;
-  background: var(--outline-active);
-  color: var(--card-bg);
-  border-color: var(--outline-active);
-  transform: scale(1.05);
-  transition: transform 0.2s;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.4);
+  transition: all 0.2s;
 }
 
 /* Game Status Display */
@@ -118,30 +114,58 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 2rem;
+  gap: 4rem;
   padding: 2rem;
 }
 
 .game-stats {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--card-bg);
+  padding: 2rem 3rem;
+  border-radius: 32px;
+  border: 4px solid var(--outline);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+}
+
+.game-stats-header {
+  display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 1rem;
+  padding-right: 3rem;
+  border-right: 4px solid var(--outline);
 }
 
 .game-stats-title {
   font-size: 5rem;
   margin: 0;
   font-weight: bold;
+  color: white;
+  white-space: nowrap;
+}
+
+.game-stats-symbols {
+  color: var(--outline);
+  font-size: 1.5rem;
+  letter-spacing: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .game-stats-info {
   display: flex;
   flex-direction: column;
+  gap: 2rem;
+  padding-left: 3rem;
+  min-width: 600px;
+}
+
+.game-stats-main {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
   font-size: 2rem;
+  color: var(--outline-active);
 }
 
 .game-stats-players,
@@ -149,34 +173,85 @@ body {
   margin: 0;
 }
 
+.game-stats-separator {
+  color: var(--outline);
+  font-size: 2rem;
+  margin: 0 1rem;
+}
+
 .game-stats-multiples {
   margin: 0;
-  color: var(--highlight-color);
+  color: var(--outline-active);
+  font-weight: bold;
+  font-size: 2rem;
+  text-align: left;
+  padding-top: 2rem;
+  border-top: 2px solid var(--outline);
+}
+
+@media (max-width: 1200px) {
+  .game-stats {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .game-stats-header {
+    padding-right: 0;
+    padding-bottom: 2rem;
+    border-right: none;
+    border-bottom: 4px solid var(--outline);
+  }
+
+  .game-stats-info {
+    padding-left: 0;
+    padding-top: 2rem;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .game-stats-main {
+    justify-content: center;
+  }
+
+  .game-stats-multiples {
+    text-align: center;
+  }
 }
 
 @media (max-width: 768px) {
-  .title {
-    font-size: 2rem;
-  }
-
-  .card-grid {
-    gap: 0.5rem;
-    padding: 0.5rem;
-  }
-
-  .blink-button {
-    margin-top: 1rem;
-    padding: 0.75rem 2rem;
-    font-size: 1.5rem;
-    width: 100%;
-    max-width: 300px;
+  .game-stats {
+    width: 90%;
+    padding: 1.5rem;
   }
 
   .game-stats-title {
     font-size: 3rem;
   }
 
-  .game-stats-info {
+  .game-stats-symbols {
+    font-size: 1.25rem;
+    letter-spacing: 0.25rem;
+  }
+
+  .game-stats-main {
+    flex-direction: column;
+    gap: 1rem;
     font-size: 1.5rem;
+  }
+
+  .game-stats-separator {
+    display: none;
+  }
+
+  .game-stats-multiples {
+    font-size: 1.5rem;
+  }
+
+  .blink-button {
+    width: 90%;
+    max-width: 400px;
+    font-size: 1.5rem;
+    padding: 1rem 2rem;
   }
 }
