@@ -76,6 +76,11 @@ contract ZigZagZog is EIP712 {
         );
         purchasedPlays[currentGameNumber][msg.sender] = numPlays;
         survivingPlays[currentGameNumber][msg.sender] = numPlays;
+
+        uint256 excess = msg.value - numPlays * playCost;
+        if (excess > 0) {
+            payable(msg.sender).transfer(excess); // Refund excess native token
+        }
     }
 
     function choicesHash(

@@ -149,6 +149,24 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         assertEq(game.purchasedPlays(gameNumber, player1), 0);
     }
+
+    function test_buy_hands_will_refund_excess_payment() public {
+        uint256 buyinAmount = playCost + 10 wei;
+        uint256 initialBalance = player1.balance;
+
+        vm.startPrank(player1);
+        game.buyPlays{value: buyinAmount}();
+        vm.stopPrank();
+
+        uint256 gameNumber = game.currentGameNumber();
+
+        assertEq(player1.balance, initialBalance - playCost);
+
+        assertEq(
+            game.purchasedPlays(gameNumber, player1),
+            buyinAmount / playCost
+        );
+    }
 }
 
 /**
