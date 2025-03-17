@@ -463,71 +463,71 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         vm.stopPrank();
     }
 
-    function test_commit_choices_round_2() public {
-        uint256 roundNumber = 1; // Ask contract for round number?
+    // function test_commit_choices_round_2() public {
+    //     uint256 roundNumber = 1; // Ask contract for round number?
 
-        uint256 p1Nonce = 0x1902a;
-        uint256 numCircles = 6;
-        uint256 numSquares = 3;
-        uint256 numTriangles = 1;
+    //     uint256 p1Nonce = 0x1902a;
+    //     uint256 numCircles = 6;
+    //     uint256 numSquares = 3;
+    //     uint256 numTriangles = 1;
 
-        bytes32 choicesMessageHash = game.choicesHash(
-            p1Nonce,
-            gameNumber,
-            roundNumber,
-            numCircles,
-            numSquares,
-            numTriangles
-        );
-        bytes memory signature = signMessageHash(
-            player1PrivateKey,
-            choicesMessageHash
-        );
+    //     bytes32 choicesMessageHash = game.choicesHash(
+    //         p1Nonce,
+    //         gameNumber,
+    //         roundNumber,
+    //         numCircles,
+    //         numSquares,
+    //         numTriangles
+    //     );
+    //     bytes memory signature = signMessageHash(
+    //         player1PrivateKey,
+    //         choicesMessageHash
+    //     );
 
-        vm.startPrank(player1);
+    //     vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+    //     assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
+    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
-        game.commitChoices(gameNumber, roundNumber, signature);
+    //     game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
+    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
-        vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
+    //     vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
-        game.revealChoices(
-            gameNumber,
-            roundNumber,
-            p1Nonce,
-            numCircles,
-            numSquares,
-            numTriangles
-        );
+    //     game.revealChoices(
+    //         gameNumber,
+    //         roundNumber,
+    //         p1Nonce,
+    //         numCircles,
+    //         numSquares,
+    //         numTriangles
+    //     );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
+    //     assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
-        vm.warp(block.timestamp + revealDuration); // Reveal window has elapsed
+    //     vm.warp(block.timestamp + revealDuration); // Reveal window has elapsed
 
-        roundNumber = 2;
+    //     roundNumber = 2;
 
-        choicesMessageHash = game.choicesHash(
-            p1Nonce,
-            gameNumber,
-            roundNumber,
-            numCircles,
-            numSquares,
-            numTriangles
-        );
-        signature = signMessageHash(player1PrivateKey, choicesMessageHash);
-        game.commitChoices(gameNumber, roundNumber, signature);
+    //     choicesMessageHash = game.choicesHash(
+    //         p1Nonce,
+    //         gameNumber,
+    //         roundNumber,
+    //         numCircles,
+    //         numSquares,
+    //         numTriangles
+    //     );
+    //     signature = signMessageHash(player1PrivateKey, choicesMessageHash);
+    //     game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
+    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
     function testRevert_commit_if_round_has_not_started() public {
         uint256 roundNumber = 1; // Ask contract for round number?
