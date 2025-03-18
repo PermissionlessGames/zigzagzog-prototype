@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Shape } from './components/Shape';
-import WalletConnect from './components/WalletConnect';
 import { useWeb3 } from '@/contexts/Web3Context';
 
 export default function Home() {
@@ -12,9 +11,6 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div className="absolute top-4 right-4">
-        <WalletConnect />
-      </div>
       <div>
         <h1 className="title">Zig Zag Zog</h1>
         <div className="card-grid">
