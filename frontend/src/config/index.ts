@@ -11,10 +11,10 @@ interface NetworkConfig {
 const defaultConfig: NetworkConfig = {
     rpcUrl: "https://testnet.game7.io/",
     contractAddress: "0x5297c340941065ab3f4253f92DA21749751813D4",
-    currencySymbol: "ETH",
+    currencySymbol: "TG7T",
     currencyDecimals: 18,
     networkName: "Game7 Testnet",
-    chainId: 17001
+    chainId: 13746
 };
 
 // Environment variables that can override the defaults
