@@ -2,6 +2,8 @@
 
 This document describes the player flows on the `ZigZagZog` smart contract and breaks down how each flow can be implemented in terms of the smart contract methods involved. It is meant for people programming _ZigZagZog_ game clients.
 
+For a list of deployed contract addresses, see [Deployments](./deployments.md).
+
 Interacting with a `ZigZagZog` smart contract:
 
 * Use the ZigZagZog ABI if you want to interact with a game contract from outside the blockchain.
