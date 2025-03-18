@@ -1,7 +1,7 @@
 'use client';
 
 import { BrowserProvider, JsonRpcSigner, ethers } from "ethers";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { ZigZagZogAbi__factory } from "@/contracts/types/factories/ZigZagZogAbi__factory";
 
 // Network configuration
