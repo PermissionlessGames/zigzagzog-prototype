@@ -41,7 +41,7 @@ export default function WalletConnect() {
   return (
     <div className="flex flex-col items-end gap-2">
       {!isCorrectNetwork ? (
-        <div className="text-center">
+        <div className="flex flex-col items-end text-right">
           <div className="text-red-500 mb-2">Wrong network detected</div>
           <button 
             onClick={handleSwitchNetwork}
