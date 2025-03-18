@@ -33,7 +33,7 @@ export default function GamePage() {
     return (
       <div className="container">
         <div style={{ marginBottom: '1rem' }}>Error: {gameData.error}</div>
-        <button onClick={() => refreshGameData(true)}>Retry</button>
+        <button onClick={() => refreshGameData()}>Retry</button>
       </div>
     );
   }

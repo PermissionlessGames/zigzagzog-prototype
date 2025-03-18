@@ -10,7 +10,6 @@ interface GameData {
   potSize: number;
   lastGameMultiple?: number;
   playCost: number;
-  isLoading: boolean;
   error: string | null;
 }
 
@@ -25,23 +24,20 @@ export function useZigZagZog() {
     potSize: 0,
     lastGameMultiple: undefined,
     playCost: 0,
-    isLoading: false, // Start with loading false to prevent flickering
     error: null
   });
 
   // Fetch game data from the contract
-  const fetchGameData = async (forceLoadingState = false) => {
+  const fetchGameData = async () => {
     if (!contract || !isConnected || !isCorrectNetwork) {
       setGameData(prev => ({ 
         ...prev,
-        isLoading: false,
         error: "Wallet not connected or wrong network"
       }));
       return;
     }
 
     try {
-      // Never show a loading state to avoid flickering
       // Just clear any existing errors
       setGameData(prev => ({ ...prev, error: null }));
 
@@ -82,7 +78,6 @@ export function useZigZagZog() {
         potSize: Number(ethers.formatEther(gameBalance)),
         lastGameMultiple,
         playCost: Number(ethers.formatEther(playCost)),
-        isLoading: false, // Always ensure loading is false
         error: null
       }));
     } catch (error) {
@@ -111,8 +106,8 @@ export function useZigZagZog() {
       // Wait for transaction to be mined
       await tx.wait();
       
-      // Refresh data after successful transaction - without loading state
-      await fetchGameData(false);
+      // Refresh data after successful transaction
+      await fetchGameData();
       
       return { success: true, error: null };
     } catch (error) {
@@ -129,8 +124,8 @@ export function useZigZagZog() {
     // Reset initial load flag when dependencies change
     isInitialLoadRef.current = true;
     
-    // Initial load (will show loading indicator on first load)
-    fetchGameData(false);
+    // Initial data load
+    fetchGameData();
     
     // Track if the component is mounted
     let isMounted = true;
@@ -138,13 +133,12 @@ export function useZigZagZog() {
     // For periodic silent refreshes
     let refreshInterval: NodeJS.Timeout | null = null;
     
-    // Set up silent refresh at a reasonable interval
+    // Set up refresh at a reasonable interval
     // Only if we have contract and connection
     if (contract && isConnected && isCorrectNetwork) {
       refreshInterval = setInterval(() => {
         if (isMounted) {
-          // Silent refresh (no loading indicator)
-          fetchGameData(false);
+          fetchGameData();
         }
       }, 15000); // 15 seconds delay
     }
@@ -161,6 +155,6 @@ export function useZigZagZog() {
   return {
     gameData,
     buyPlays,
-    refreshGameData: (forceLoading = false) => fetchGameData(forceLoading)
+    refreshGameData: () => fetchGameData()
   };
 }
