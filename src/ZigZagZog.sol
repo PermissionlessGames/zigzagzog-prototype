@@ -67,17 +67,11 @@ contract ZigZagZog is EIP712 {
 
     mapping(uint256 => Game) public GameState;
 
-    event PlayerCommitment(
-        address indexed playerAddress,
-        uint256 indexed gameNumber,
-        uint256 indexed roundNumber
-    );
+    event PlayerCommitment(address indexed playerAddress, uint256 indexed gameNumber, uint256 indexed roundNumber);
 
-    constructor(
-        uint256 _playCost,
-        uint64 _commitDuration,
-        uint64 _revealDuration
-    ) EIP712("ZigZagZog", ZigZagZogVersion) {
+    constructor(uint256 _playCost, uint64 _commitDuration, uint64 _revealDuration)
+        EIP712("ZigZagZog", ZigZagZogVersion)
+    {
         playCost = _playCost;
         commitDuration = _commitDuration;
         revealDuration = _revealDuration;
@@ -85,11 +79,7 @@ contract ZigZagZog is EIP712 {
     }
 
     function buyPlays() external payable {
-        if (
-            block.timestamp >
-            GameState[currentGameNumber].gameTimestamp + commitDuration ||
-            currentGameNumber == 0
-        ) {
+        if (block.timestamp > GameState[currentGameNumber].gameTimestamp + commitDuration || currentGameNumber == 0) {
             currentGameNumber++;
             GameState[currentGameNumber].gameTimestamp = block.timestamp;
             GameState[currentGameNumber].roundNumber = 1;
@@ -97,18 +87,9 @@ contract ZigZagZog is EIP712 {
         }
 
         uint256 numPlays = msg.value / playCost;
-        require(
-            numPlays > 0,
-            "ZigZagZog.buyPlays(): insufficient value to buy a play."
-        );
-        GameState[currentGameNumber]
-            .rounds[currentGameNumber]
-            .players[msg.sender]
-            .purchasedPlays += numPlays;
-        GameState[currentGameNumber]
-            .rounds[currentGameNumber]
-            .players[msg.sender]
-            .playerSurvivingPlays += numPlays;
+        require(numPlays > 0, "ZigZagZog.buyPlays(): insufficient value to buy a play.");
+        GameState[currentGameNumber].rounds[currentGameNumber].players[msg.sender].purchasedPlays += numPlays;
+        GameState[currentGameNumber].rounds[currentGameNumber].players[msg.sender].playerSurvivingPlays += numPlays;
 
         uint256 stakedAmount = numPlays * playCost;
         GameState[currentGameNumber].gameBalance += stakedAmount;
@@ -142,19 +123,14 @@ contract ZigZagZog is EIP712 {
         return _hashTypedDataV4(structHash);
     }
 
-    function commitChoices(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        bytes memory signature
-    ) external {
+    function commitChoices(uint256 gameNumber, uint256 roundNumber, bytes memory signature) external {
         Game storage game = GameState[gameNumber];
         Player storage player = game.rounds[roundNumber].players[msg.sender];
 
         if (roundNumber > game.roundNumber) {
             require(
-                (block.timestamp >
-                    game.roundTimestamp + commitDuration + revealDuration) &&
-                    (roundNumber - game.roundNumber == 1),
+                (block.timestamp > game.roundTimestamp + commitDuration + revealDuration)
+                    && (roundNumber - game.roundNumber == 1),
                 "ZigZagZog.commitChoices: round hasn't started yet"
             );
             game.roundNumber++;
@@ -162,89 +138,47 @@ contract ZigZagZog is EIP712 {
         }
 
         require(
-            block.timestamp <= game.roundTimestamp + commitDuration,
-            "ZigZagZog.commitChoices: commit window has passed"
+            block.timestamp <= game.roundTimestamp + commitDuration, "ZigZagZog.commitChoices: commit window has passed"
         );
 
-        require(
-            !player.playerHasCommitted,
-            "ZigZagZog.commitChoices: player already committed"
-        );
+        require(!player.playerHasCommitted, "ZigZagZog.commitChoices: player already committed");
 
         if (roundNumber > 1) {
             uint256 previousRound = roundNumber - 1;
             EliminationResult elimResult = _calculateEliminationResult(
-                game.rounds[previousRound].picksRevealed[
-                    uint256(EliminationResult.CircleEliminated)
-                ],
-                game.rounds[previousRound].picksRevealed[
-                    uint256(EliminationResult.SquareEliminated)
-                ],
-                game.rounds[previousRound].picksRevealed[
-                    uint256(EliminationResult.TriangleEliminated)
-                ]
+                game.rounds[previousRound].picksRevealed[uint256(EliminationResult.CircleEliminated)],
+                game.rounds[previousRound].picksRevealed[uint256(EliminationResult.SquareEliminated)],
+                game.rounds[previousRound].picksRevealed[uint256(EliminationResult.TriangleEliminated)]
             );
-            Player storage previousPlayer = game
-                .rounds[roundNumber - 1]
-                .players[msg.sender];
+            Player storage previousPlayer = game.rounds[roundNumber - 1].players[msg.sender];
             if (elimResult == EliminationResult.CircleEliminated) {
-                player.playerSurvivingPlays =
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.SquareEliminated)
-                    ] +
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.TriangleEliminated)
-                    ];
-                game.survivingPlays =
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.SquareEliminated)
-                    ] +
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.TriangleEliminated)
-                    ];
+                player.playerSurvivingPlays = previousPlayer.playerPicksRevealed[uint256(
+                    EliminationResult.SquareEliminated
+                )] + previousPlayer.playerPicksRevealed[uint256(EliminationResult.TriangleEliminated)];
+                game.survivingPlays = game.rounds[previousRound].picksRevealed[uint256(
+                    EliminationResult.SquareEliminated
+                )] + game.rounds[previousRound].picksRevealed[uint256(EliminationResult.TriangleEliminated)];
             } else if (elimResult == EliminationResult.SquareEliminated) {
-                player.playerSurvivingPlays =
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.CircleEliminated)
-                    ] +
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.TriangleEliminated)
-                    ];
-                game.survivingPlays =
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.CircleEliminated)
-                    ] +
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.TriangleEliminated)
-                    ];
+                player.playerSurvivingPlays = previousPlayer.playerPicksRevealed[uint256(
+                    EliminationResult.CircleEliminated
+                )] + previousPlayer.playerPicksRevealed[uint256(EliminationResult.TriangleEliminated)];
+                game.survivingPlays = game.rounds[previousRound].picksRevealed[uint256(
+                    EliminationResult.CircleEliminated
+                )] + game.rounds[previousRound].picksRevealed[uint256(EliminationResult.TriangleEliminated)];
             } else if (elimResult == EliminationResult.TriangleEliminated) {
-                player.playerSurvivingPlays =
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.CircleEliminated)
-                    ] +
-                    previousPlayer.playerPicksRevealed[
-                        uint256(EliminationResult.SquareEliminated)
-                    ];
-                game.survivingPlays =
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.CircleEliminated)
-                    ] +
-                    game.rounds[previousRound].picksRevealed[
-                        uint256(EliminationResult.SquareEliminated)
-                    ];
+                player.playerSurvivingPlays = previousPlayer.playerPicksRevealed[uint256(
+                    EliminationResult.CircleEliminated
+                )] + previousPlayer.playerPicksRevealed[uint256(EliminationResult.SquareEliminated)];
+                game.survivingPlays = game.rounds[previousRound].picksRevealed[uint256(
+                    EliminationResult.CircleEliminated
+                )] + game.rounds[previousRound].picksRevealed[uint256(EliminationResult.SquareEliminated)];
             } else {
                 revert("ZigZagZog.commitChoices: game has ended");
             }
 
-            require(
-                player.playerSurvivingPlays > 0,
-                "ZigZagZog.commitChoices: player has no remaining plays"
-            );
+            require(player.playerSurvivingPlays > 0, "ZigZagZog.commitChoices: player has no remaining plays");
 
-            if (
-                game.survivingPlays <= 2 ||
-                game.survivingPlays == player.playerSurvivingPlays
-            ) {
+            if (game.survivingPlays <= 2 || game.survivingPlays == player.playerSurvivingPlays) {
                 revert("ZigZagZog.commitChoices: game has ended");
             }
         }
@@ -265,71 +199,43 @@ contract ZigZagZog is EIP712 {
     ) external {
         Game storage game = GameState[gameNumber];
         Player storage player = game.rounds[roundNumber].players[msg.sender];
-        require(
-            !player.playerHasRevealed,
-            "ZigZagZog.revealChoices: player already revealed"
-        );
+        require(!player.playerHasRevealed, "ZigZagZog.revealChoices: player already revealed");
 
         require(
             block.timestamp > game.roundTimestamp + commitDuration,
             "ZigZagZog.revealChoices: reveal phase has not yet begun"
         );
         require(
-            block.timestamp <=
-                game.roundTimestamp + commitDuration + revealDuration,
+            block.timestamp <= game.roundTimestamp + commitDuration + revealDuration,
             "ZigZagZog.revealChoices: reveal phase has ended"
         );
 
-        bytes32 choicesMessageHash = choicesHash(
-            nonce,
-            gameNumber,
-            roundNumber,
-            numCircles,
-            numSquares,
-            numTriangles
-        );
+        bytes32 choicesMessageHash = choicesHash(nonce, gameNumber, roundNumber, numCircles, numSquares, numTriangles);
         require(
-            SignatureChecker.isValidSignatureNow(
-                msg.sender,
-                choicesMessageHash,
-                player.playerCommittment
-            ),
+            SignatureChecker.isValidSignatureNow(msg.sender, choicesMessageHash, player.playerCommittment),
             "ZigZagZog.revealChoices: invalid signature"
         );
 
         require(
-            numCircles + numSquares + numTriangles ==
-                player.playerSurvivingPlays,
+            numCircles + numSquares + numTriangles == player.playerSurvivingPlays,
             "ZigZagZog.revealChoices: insufficient remaining plays"
         );
 
-        game.rounds[roundNumber].picksRevealed[
-            uint256(EliminationResult.CircleEliminated)
-        ] += numCircles;
-        game.rounds[roundNumber].picksRevealed[
-            uint256(EliminationResult.SquareEliminated)
-        ] += numSquares;
-        game.rounds[roundNumber].picksRevealed[
-            uint256(EliminationResult.TriangleEliminated)
-        ] += numTriangles;
-        player.playerPicksRevealed[
-            uint256(EliminationResult.CircleEliminated)
-        ] += numCircles;
-        player.playerPicksRevealed[
-            uint256(EliminationResult.SquareEliminated)
-        ] += numSquares;
-        player.playerPicksRevealed[
-            uint256(EliminationResult.TriangleEliminated)
-        ] += numTriangles;
+        game.rounds[roundNumber].picksRevealed[uint256(EliminationResult.CircleEliminated)] += numCircles;
+        game.rounds[roundNumber].picksRevealed[uint256(EliminationResult.SquareEliminated)] += numSquares;
+        game.rounds[roundNumber].picksRevealed[uint256(EliminationResult.TriangleEliminated)] += numTriangles;
+        player.playerPicksRevealed[uint256(EliminationResult.CircleEliminated)] += numCircles;
+        player.playerPicksRevealed[uint256(EliminationResult.SquareEliminated)] += numSquares;
+        player.playerPicksRevealed[uint256(EliminationResult.TriangleEliminated)] += numTriangles;
 
         player.playerHasRevealed = true;
     }
 
-    function _calculateEliminationResult(
-        uint256 _circlesRevealed,
-        uint256 _squaresRevealed,
-        uint256 _trianglesRevealed
-    ) internal pure returns (EliminationResult) {
+    function _calculateEliminationResult(uint256 _circlesRevealed, uint256 _squaresRevealed, uint256 _trianglesRevealed)
+        internal
+        pure
+        returns (EliminationResult)
+    {
         // I'm assuming trump order is Circle > Square > Triangle (can change later)
         if (_circlesRevealed > _squaresRevealed) {
             if (_circlesRevealed >= _trianglesRevealed) {
@@ -342,7 +248,9 @@ contract ZigZagZog is EIP712 {
                 return EliminationResult.TriangleEliminated;
             } else if (_circlesRevealed == _trianglesRevealed) {
                 return EliminationResult.NothingEliminated;
-            } else return EliminationResult.CircleEliminated;
+            } else {
+                return EliminationResult.CircleEliminated;
+            }
         } else {
             if (_squaresRevealed >= _trianglesRevealed) {
                 return EliminationResult.SquareEliminated;
@@ -357,136 +265,78 @@ contract ZigZagZog is EIP712 {
         return GameState[gameNumber].gameBalance;
     }
 
-    function getPurchasedPlays(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .purchasedPlays;
+    function getPurchasedPlays(uint256 gameNumber, uint256 roundNumber, address player) public view returns (uint256) {
+        return GameState[gameNumber].rounds[roundNumber].players[player].purchasedPlays;
     }
 
-    function getPlayerSurvivingPlays(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerSurvivingPlays;
+    function getPlayerSurvivingPlays(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (uint256)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerSurvivingPlays;
     }
 
-    function getPlayerHasCommitted(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (bool) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerHasCommitted;
+    function getPlayerHasCommitted(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (bool)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerHasCommitted;
     }
 
-    function getPlayerCommittment(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (bytes memory) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerCommittment;
+    function getPlayerCommittment(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (bytes memory)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerCommittment;
     }
 
-    function getPlayerHasRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (bool) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerHasRevealed;
+    function getPlayerHasRevealed(uint256 gameNumber, uint256 roundNumber, address player) public view returns (bool) {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerHasRevealed;
     }
 
-    function getCirclesRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber].rounds[roundNumber].picksRevealed[
-                uint256(EliminationResult.CircleEliminated)
-            ];
+    function getCirclesRevealed(uint256 gameNumber, uint256 roundNumber) public view returns (uint256) {
+        return GameState[gameNumber].rounds[roundNumber].picksRevealed[uint256(EliminationResult.CircleEliminated)];
     }
 
-    function getSquaresRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber].rounds[roundNumber].picksRevealed[
-                uint256(EliminationResult.SquareEliminated)
-            ];
+    function getSquaresRevealed(uint256 gameNumber, uint256 roundNumber) public view returns (uint256) {
+        return GameState[gameNumber].rounds[roundNumber].picksRevealed[uint256(EliminationResult.SquareEliminated)];
     }
 
-    function getTrianglesRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber].rounds[roundNumber].picksRevealed[
-                uint256(EliminationResult.TriangleEliminated)
-            ];
+    function getTrianglesRevealed(uint256 gameNumber, uint256 roundNumber) public view returns (uint256) {
+        return GameState[gameNumber].rounds[roundNumber].picksRevealed[uint256(EliminationResult.TriangleEliminated)];
     }
 
-    function getPlayerCirclesRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerPicksRevealed[
-                    uint256(EliminationResult.CircleEliminated)
-                ];
+    function getPlayerCirclesRevealed(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (uint256)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerPicksRevealed[uint256(
+            EliminationResult.CircleEliminated
+        )];
     }
 
-    function getPlayerSquaresRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerPicksRevealed[
-                    uint256(EliminationResult.SquareEliminated)
-                ];
+    function getPlayerSquaresRevealed(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (uint256)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerPicksRevealed[uint256(
+            EliminationResult.SquareEliminated
+        )];
     }
 
-    function getPlayerTrianglesRevealed(
-        uint256 gameNumber,
-        uint256 roundNumber,
-        address player
-    ) public view returns (uint256) {
-        return
-            GameState[gameNumber]
-                .rounds[roundNumber]
-                .players[player]
-                .playerPicksRevealed[
-                    uint256(EliminationResult.TriangleEliminated)
-                ];
+    function getPlayerTrianglesRevealed(uint256 gameNumber, uint256 roundNumber, address player)
+        public
+        view
+        returns (uint256)
+    {
+        return GameState[gameNumber].rounds[roundNumber].players[player].playerPicksRevealed[uint256(
+            EliminationResult.TriangleEliminated
+        )];
     }
 
     function currentRoundNumber() public view returns (uint256) {
