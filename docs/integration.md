@@ -34,6 +34,50 @@ The game balance (total staked value) for any game number can be checked using:
 function gameBalance(uint256 gameNumber) external view returns (uint256);
 ```
 
+## Round Timing and Transitions
+
+Each round in _ZigZagZog_ has strict timing windows for the commit and reveal phases. Understanding these windows is crucial for client implementations.
+
+To check the current game and round state:
+```solidity
+function GameState(uint256 gameNumber) external view returns (
+    uint256 gameTimestamp,    // When the game started
+    uint256 roundNumber,      // Current round number
+    uint256 roundTimestamp    // When the current round started
+);
+```
+
+The timing windows work as follows:
+
+1. Commit Phase: Starts at `roundTimestamp` and lasts for `commitDuration` seconds
+   - Players can commit during: `roundTimestamp <= timestamp <= roundTimestamp + commitDuration`
+   - Check if commit phase is active: `timestamp <= roundTimestamp + commitDuration`
+
+2. Reveal Phase: Starts after commit phase and lasts for `revealDuration` seconds
+   - Players can reveal during: `roundTimestamp + commitDuration < timestamp <= roundTimestamp + commitDuration + revealDuration`
+   - Check if reveal phase is active: `timestamp > roundTimestamp + commitDuration && timestamp <= roundTimestamp + commitDuration + revealDuration`
+
+3. Next Round: Starts when a player makes the first commit after the previous round's reveal phase ends
+   - Next round can start when: `timestamp > roundTimestamp + commitDuration + revealDuration`
+   - The first player to call `commitChoices()` after this time will trigger the start of the next round
+   - When this happens, `roundNumber` is incremented and `roundTimestamp` is updated to the current timestamp
+
+For example, to determine the current phase and when the next phase will start:
+```solidity
+uint256 roundEnd = gameState.roundTimestamp + commitDuration + revealDuration;
+if (block.timestamp <= gameState.roundTimestamp + commitDuration) {
+    // In commit phase
+    uint256 commitPhaseEndsIn = gameState.roundTimestamp + commitDuration - block.timestamp;
+} else if (block.timestamp <= roundEnd) {
+    // In reveal phase
+    uint256 revealPhaseEndsIn = roundEnd - block.timestamp;
+} else {
+    // Previous round has ended, next round will start with the next commitment
+}
+```
+
+Note: When implementing a client, it's important to account for slight variations in blockchain timestamps and potential block time fluctuations. Consider adding small buffers when checking phase transitions.
+
 ## Buying Plays
 
 To participate in a game, players must first buy plays using the native token. The cost per play is fixed and can be checked using the `playCost()` function.
