@@ -1,8 +1,9 @@
 'use client';
 
-import { BrowserProvider, JsonRpcSigner, ethers } from "ethers";
+import { BrowserProvider, JsonRpcSigner, ethers, Contract } from "ethers";
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { ZigZagZogAbi__factory } from "@/contracts/types/factories/ZigZagZogAbi__factory";
+import { ZigZagZogAbi } from "@/contracts/types/ZigZagZogAbi";
 
 // Network configuration
 interface NetworkConfig {
@@ -64,7 +65,7 @@ interface Web3ContextType extends NetworkConfig {
   account: string | null;
   provider: BrowserProvider | null;
   signer: JsonRpcSigner | null;
-  contract: ethers.Contract | null;
+  contract: ZigZagZogAbi | null;
   balance: string;
   connect: () => Promise<void>;
   disconnect: () => void;
@@ -99,7 +100,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
   const [account, setAccount] = useState<string | null>(null);
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
-  const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [contract, setContract] = useState<ZigZagZogAbi | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [balance, setBalance] = useState("0");
   const [chainId, setChainId] = useState<number | null>(null);
@@ -123,6 +124,10 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
       
       // Request accounts
       const ethereum = window.ethereum;
+      if (!ethereum) {
+        throw new Error("No Ethereum provider found. Please install MetaMask or another compatible wallet.");
+      }
+      
       await ethereum.request({ method: "eth_requestAccounts" });
       
       // Create provider and signer
@@ -179,8 +184,13 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
   const switchNetwork = async () => {
     if (!isMetaMaskAvailable() || !provider) return;
     
+    const ethereum = window.ethereum;
+    if (!ethereum) {
+      throw new Error("No Ethereum provider found. Please install MetaMask or another compatible wallet.");
+    }
+    
     try {
-      await window.ethereum.request({
+      await ethereum.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: `0x${config.chainId.toString(16)}` }],
       });
@@ -188,7 +198,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
       // This error code indicates that the chain has not been added to MetaMask
       if (switchError.code === 4902) {
         try {
-          await window.ethereum.request({
+          await ethereum.request({
             method: "wallet_addEthereumChain",
             params: [
               {
@@ -243,6 +253,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
     // Auto-connect if previously connected and not explicitly disconnected
     const checkConnection = async () => {
+      const ethereum = window.ethereum;
       if (ethereum) {
         try {
           // Check if user manually disconnected in a previous session

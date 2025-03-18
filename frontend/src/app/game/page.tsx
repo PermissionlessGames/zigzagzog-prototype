@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameOverview } from '../components/GameOverview';
-import { useZigZagZog } from '@/hooks/useZigZagZog';
+import { useZigZagZog, ShapeSelection } from '@/hooks/useZigZagZog';
 import Toast from '@/components/Toast';
 
 export default function GamePage() {
-  const { gameData, buyPlays, refreshGameData } = useZigZagZog();
+  const { gameData, buyPlays, commitChoices, revealChoices, refreshGameData } = useZigZagZog();
   const [isBuying, setIsBuying] = useState(false);
   
   // Toast notifications
@@ -31,6 +31,51 @@ export default function GamePage() {
       console.error('Error buying plays:', error);
     } finally {
       setIsBuying(false);
+    }
+  };
+
+  // Handle committing choices
+  const handleCommitChoices = async (shapes: ShapeSelection) => {
+    try {
+      const result = await commitChoices(shapes);
+      if (!result.success && result.error) {
+        setToastMessage(`Commit Error: ${result.error}`);
+        setToastType('error');
+        return result;
+      } else if (result.success) {
+        setToastMessage(`Successfully committed ${shapes.circles} circles, ${shapes.squares} squares, and ${shapes.triangles} triangles!`);
+        setToastType('success');
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setToastMessage(`Commit failed: ${errorMessage}`);
+      setToastType('error');
+      console.error('Error committing choices:', error);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Handle revealing choices
+  const handleRevealChoices = async () => {
+    try {
+      const result = await revealChoices();
+      if (!result.success && result.error) {
+        setToastMessage(`Reveal Error: ${result.error}`);
+        setToastType('error');
+        return result;
+      } else if (result.success) {
+        const shapes = result.shapes as ShapeSelection;
+        setToastMessage(`Successfully revealed ${shapes.circles} circles, ${shapes.squares} squares, and ${shapes.triangles} triangles!`);
+        setToastType('success');
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setToastMessage(`Reveal failed: ${errorMessage}`);
+      setToastType('error');
+      console.error('Error revealing choices:', error);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -66,6 +111,15 @@ export default function GamePage() {
         roundTimestamp={gameData.roundTimestamp}
         commitDuration={gameData.commitDuration}
         revealDuration={gameData.revealDuration}
+        isGameEnded={gameData.isGameEnded}
+        willBuyingStartNewGame={gameData.willBuyingStartNewGame}
+        hasCommitted={gameData.hasCommitted}
+        hasRevealed={gameData.hasRevealed}
+        playerRemainingPlays={gameData.playerRemainingPlays}
+        commitCount={gameData.commitCount}
+        revealedShapes={gameData.revealedShapes}
+        onCommitChoices={handleCommitChoices}
+        onRevealChoices={handleRevealChoices}
       />
       
       {/* Display toast for errors */}
