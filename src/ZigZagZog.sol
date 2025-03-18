@@ -44,12 +44,8 @@ contract ZigZagZog is EIP712 {
     struct Round {
         //player address => player
         mapping(address => Player) players;
-        //# of circles revealed
-        uint256 circlesRevealed;
-        //# of squares revealed
-        uint256 squaredRevealed;
-        //# of triangles revealed
-        uint256 trianglesRevealed;
+        //pick number => pick count
+        mapping(uint256 => uint256) picksRevealed;
     }
 
     struct Player {
@@ -63,12 +59,8 @@ contract ZigZagZog is EIP712 {
         bytes playerCommittment;
         //player has revealed
         bool playerHasRevealed;
-        //# of circles revealed by player
-        uint256 playerCirclesRevealed;
-        //# of squares revealed by player
-        uint256 playerSquaresRevealed;
-        //# of triangles revealed by player
-        uint256 playerTrianglesRevealed;
+        //pick number => pick count
+        mapping(uint256 => uint256) playerPicksRevealed;
     }
 
     uint256 public currentGameNumber = 0;
@@ -157,9 +149,7 @@ contract ZigZagZog is EIP712 {
     ) external {
         Game storage game = GameState[gameNumber];
         Player storage player = game.rounds[roundNumber].players[msg.sender];
-        Player storage previousPlayer = game.rounds[roundNumber - 1].players[
-            msg.sender
-        ];
+
         if (roundNumber > game.roundNumber) {
             require(
                 (block.timestamp >
@@ -184,32 +174,64 @@ contract ZigZagZog is EIP712 {
         if (roundNumber > 1) {
             uint256 previousRound = roundNumber - 1;
             EliminationResult elimResult = _calculateEliminationResult(
-                game.rounds[previousRound].circlesRevealed,
-                game.rounds[previousRound].squaredRevealed,
-                game.rounds[previousRound].trianglesRevealed
+                game.rounds[previousRound].picksRevealed[
+                    uint256(EliminationResult.CircleEliminated)
+                ],
+                game.rounds[previousRound].picksRevealed[
+                    uint256(EliminationResult.SquareEliminated)
+                ],
+                game.rounds[previousRound].picksRevealed[
+                    uint256(EliminationResult.TriangleEliminated)
+                ]
             );
-
+            Player storage previousPlayer = game
+                .rounds[roundNumber - 1]
+                .players[msg.sender];
             if (elimResult == EliminationResult.CircleEliminated) {
                 player.playerSurvivingPlays =
-                    previousPlayer.playerSquaresRevealed +
-                    previousPlayer.playerTrianglesRevealed;
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.SquareEliminated)
+                    ] +
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.TriangleEliminated)
+                    ];
                 game.survivingPlays =
-                    game.rounds[previousRound].squaredRevealed +
-                    game.rounds[previousRound].trianglesRevealed;
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.SquareEliminated)
+                    ] +
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.TriangleEliminated)
+                    ];
             } else if (elimResult == EliminationResult.SquareEliminated) {
                 player.playerSurvivingPlays =
-                    previousPlayer.playerCirclesRevealed +
-                    previousPlayer.playerTrianglesRevealed;
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.CircleEliminated)
+                    ] +
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.TriangleEliminated)
+                    ];
                 game.survivingPlays =
-                    game.rounds[previousRound].circlesRevealed +
-                    game.rounds[previousRound].trianglesRevealed;
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.CircleEliminated)
+                    ] +
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.TriangleEliminated)
+                    ];
             } else if (elimResult == EliminationResult.TriangleEliminated) {
                 player.playerSurvivingPlays =
-                    previousPlayer.playerCirclesRevealed +
-                    previousPlayer.playerSquaresRevealed;
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.CircleEliminated)
+                    ] +
+                    previousPlayer.playerPicksRevealed[
+                        uint256(EliminationResult.SquareEliminated)
+                    ];
                 game.survivingPlays =
-                    game.rounds[previousRound].circlesRevealed +
-                    game.rounds[previousRound].squaredRevealed;
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.CircleEliminated)
+                    ] +
+                    game.rounds[previousRound].picksRevealed[
+                        uint256(EliminationResult.SquareEliminated)
+                    ];
             } else {
                 revert("ZigZagZog.commitChoices: game has ended");
             }
@@ -281,12 +303,24 @@ contract ZigZagZog is EIP712 {
             "ZigZagZog.revealChoices: insufficient remaining plays"
         );
 
-        game.rounds[roundNumber].circlesRevealed += numCircles;
-        game.rounds[roundNumber].squaredRevealed += numSquares;
-        game.rounds[roundNumber].trianglesRevealed += numTriangles;
-        player.playerCirclesRevealed += numCircles;
-        player.playerSquaresRevealed += numSquares;
-        player.playerTrianglesRevealed += numTriangles;
+        game.rounds[roundNumber].picksRevealed[
+            uint256(EliminationResult.CircleEliminated)
+        ] += numCircles;
+        game.rounds[roundNumber].picksRevealed[
+            uint256(EliminationResult.SquareEliminated)
+        ] += numSquares;
+        game.rounds[roundNumber].picksRevealed[
+            uint256(EliminationResult.TriangleEliminated)
+        ] += numTriangles;
+        player.playerPicksRevealed[
+            uint256(EliminationResult.CircleEliminated)
+        ] += numCircles;
+        player.playerPicksRevealed[
+            uint256(EliminationResult.SquareEliminated)
+        ] += numSquares;
+        player.playerPicksRevealed[
+            uint256(EliminationResult.TriangleEliminated)
+        ] += numTriangles;
 
         player.playerHasRevealed = true;
     }
@@ -387,21 +421,30 @@ contract ZigZagZog is EIP712 {
         uint256 gameNumber,
         uint256 roundNumber
     ) public view returns (uint256) {
-        return GameState[gameNumber].rounds[roundNumber].circlesRevealed;
+        return
+            GameState[gameNumber].rounds[roundNumber].picksRevealed[
+                uint256(EliminationResult.CircleEliminated)
+            ];
     }
 
     function getSquaresRevealed(
         uint256 gameNumber,
         uint256 roundNumber
     ) public view returns (uint256) {
-        return GameState[gameNumber].rounds[roundNumber].squaredRevealed;
+        return
+            GameState[gameNumber].rounds[roundNumber].picksRevealed[
+                uint256(EliminationResult.SquareEliminated)
+            ];
     }
 
     function getTrianglesRevealed(
         uint256 gameNumber,
         uint256 roundNumber
     ) public view returns (uint256) {
-        return GameState[gameNumber].rounds[roundNumber].trianglesRevealed;
+        return
+            GameState[gameNumber].rounds[roundNumber].picksRevealed[
+                uint256(EliminationResult.TriangleEliminated)
+            ];
     }
 
     function getPlayerCirclesRevealed(
@@ -413,7 +456,9 @@ contract ZigZagZog is EIP712 {
             GameState[gameNumber]
                 .rounds[roundNumber]
                 .players[player]
-                .playerCirclesRevealed;
+                .playerPicksRevealed[
+                    uint256(EliminationResult.CircleEliminated)
+                ];
     }
 
     function getPlayerSquaresRevealed(
@@ -425,7 +470,9 @@ contract ZigZagZog is EIP712 {
             GameState[gameNumber]
                 .rounds[roundNumber]
                 .players[player]
-                .playerSquaresRevealed;
+                .playerPicksRevealed[
+                    uint256(EliminationResult.SquareEliminated)
+                ];
     }
 
     function getPlayerTrianglesRevealed(
@@ -437,7 +484,9 @@ contract ZigZagZog is EIP712 {
             GameState[gameNumber]
                 .rounds[roundNumber]
                 .players[player]
-                .playerTrianglesRevealed;
+                .playerPicksRevealed[
+                    uint256(EliminationResult.TriangleEliminated)
+                ];
     }
 
     function currentRoundNumber() public view returns (uint256) {
