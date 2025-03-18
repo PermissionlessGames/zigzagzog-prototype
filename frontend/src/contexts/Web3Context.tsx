@@ -111,13 +111,16 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
   };
 
   // Connect wallet
-  const connect = async () => {
+  const connect = useCallback(async () => {
     if (!isMetaMaskAvailable()) {
       alert("Please install MetaMask to use this application");
       return;
     }
 
     try {
+      // Clear disconnected flag when user attempts to connect
+      localStorage.removeItem('walletDisconnected');
+      
       // Request accounts
       const ethereum = window.ethereum;
       await ethereum.request({ method: "eth_requestAccounts" });
@@ -150,17 +153,27 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
     } catch (error) {
       console.error("Failed to connect wallet", error);
     }
-  };
+  }, []);
 
   // Disconnect wallet
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
+    // MetaMask doesn't have a disconnect method in its API
+    // The best we can do is clear our local state
     setAccount(null);
     setProvider(null);
     setSigner(null);
     setContract(null);
     setIsConnected(false);
     setBalance("0");
-  };
+    setChainId(null);
+    
+    // Store a flag in localStorage to prevent auto-connecting
+    localStorage.setItem('walletDisconnected', 'true');
+    
+    // For better UX, reload the page after disconnect
+    // This ensures a clean state
+    window.location.reload();
+  }, []);
 
   // Switch network
   const switchNetwork = async () => {
@@ -228,13 +241,18 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
       ethereum.on("chainChanged", handleChainChanged);
     }
 
-    // Auto-connect if previously connected
+    // Auto-connect if previously connected and not explicitly disconnected
     const checkConnection = async () => {
       if (ethereum) {
         try {
-          const accounts = await ethereum.request({ method: "eth_accounts" });
-          if (accounts.length > 0) {
-            connect();
+          // Check if user manually disconnected in a previous session
+          const wasDisconnected = localStorage.getItem('walletDisconnected') === 'true';
+          
+          if (!wasDisconnected) {
+            const accounts = await ethereum.request({ method: "eth_accounts" });
+            if (accounts.length > 0) {
+              connect();
+            }
           }
         } catch (error) {
           console.error("Failed to check connection", error);
