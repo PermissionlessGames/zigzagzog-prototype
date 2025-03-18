@@ -4,6 +4,43 @@ pragma solidity ^0.8.13;
 import {Test, console} from "../lib/forge-std/src/Test.sol";
 import {ZigZagZog} from "../src/ZigZagZog.sol";
 
+struct Game {
+    //game number
+    uint256 gameNumber;
+    //game timestamp
+    uint256 gameTimestamp;
+    //round number
+    uint256 roundNumber;
+    //round timestamp
+    uint256 roundTimestamp;
+    //game balance
+    uint256 gameBalance;
+    //surviving plays
+    uint256 survivingPlays;
+    //player address => # of plays purchased
+    mapping(address => uint256) purchasedPlays;
+    //player address => # of surviving plays
+    mapping(address => uint256) playerSurvivingPlays;
+    //round number => player address => player has committed
+    mapping(uint256 => mapping(address => bool)) playerHasCommitted; //Might be redundant
+    //round number => player address => player commitment
+    mapping(uint256 => mapping(address => bytes)) playerCommittment;
+    //round number => player address => player has revealed
+    mapping(uint256 => mapping(address => bool)) playerHasRevealed;
+    //round number => # of circles revealed
+    mapping(uint256 => uint256) circlesRevealed;
+    //round number => # of squares revealed
+    mapping(uint256 => uint256) squaredRevealed;
+    //round number => # of triangles revealed
+    mapping(uint256 => uint256) trianglesRevealed;
+    //round number => player address => # of circles revealed by player
+    mapping(uint256 => mapping(address => uint256)) playerCirclesRevealed;
+    //round number => player address => # of squares revealed by player
+    mapping(uint256 => mapping(address => uint256)) playerSquaresRevealed;
+    //round number => player address => # of triangles revealed by player
+    mapping(uint256 => mapping(address => uint256)) playerTrianglesRevealed;
+}
+
 contract ZigZagZogTestBase is Test {
     ZigZagZog public game;
 
@@ -63,13 +100,10 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         uint256 gameNumber = game.currentGameNumber();
 
-        assertEq(game.gameBalance(gameNumber), buyinAmount);
+        assertEq(game.getGameBalance(gameNumber), buyinAmount);
         assertEq(player1.balance, initialBalance - buyinAmount);
 
-        assertEq(
-            game.purchasedPlays(gameNumber, player1),
-            buyinAmount / playCost
-        );
+        assertEq(game.getPurchasedPlays(gameNumber, player1), 10);
     }
 
     function testRevert_if_value_is_insufficient_to_buy_a_hand() public {
@@ -87,7 +121,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         assertEq(player1.balance, initialBalance);
 
-        assertEq(game.purchasedPlays(gameNumber, player1), 0);
+        assertEq(game.getPurchasedPlays(gameNumber, player1), 0);
     }
 
     function test_buy_hands_will_refund_excess_payment() public {
@@ -102,10 +136,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         assertEq(player1.balance, initialBalance - playCost);
 
-        assertEq(
-            game.purchasedPlays(gameNumber, player1),
-            buyinAmount / playCost
-        );
+        assertEq(game.getPurchasedPlays(gameNumber, player1), 10);
     }
 }
 
@@ -132,7 +163,9 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     function test_commit_choices() public {
         uint256 roundNumber = 1;
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
 
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
@@ -156,7 +189,9 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         game.commitChoices(gameNumber, roundNumber, signature);
         vm.stopPrank();
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
     }
 
     function testRevert_commit_multiple_times() public {
@@ -182,13 +217,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.expectRevert("ZigZagZog.commitChoices: player already committed");
         game.commitChoices(gameNumber, roundNumber, signature);
@@ -219,13 +262,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
@@ -238,8 +289,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
             numTriangles
         );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertTrue(game.getPlayerHasRevealed(gameNumber, roundNumber, player1));
 
         vm.stopPrank();
     }
@@ -267,13 +320,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
@@ -286,8 +347,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
             numTriangles
         );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertTrue(game.getPlayerHasRevealed(gameNumber, roundNumber, player1));
 
         vm.expectRevert("ZigZagZog.revealChoices: player already revealed");
         game.revealChoices(
@@ -299,8 +362,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
             numTriangles
         );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertTrue(game.getPlayerHasRevealed(gameNumber, roundNumber, player1));
 
         vm.stopPrank();
     }
@@ -328,13 +393,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
@@ -351,8 +424,12 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         vm.expectRevert("ZigZagZog.revealChoices: invalid signature");
         game.revealChoices(25, roundNumber, p1Nonce, numCircles, numSquares, 2);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.revealChoices(
             gameNumber,
@@ -363,8 +440,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
             numTriangles
         );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertTrue(game.getPlayerHasRevealed(gameNumber, roundNumber, player1));
 
         vm.stopPrank();
     }
@@ -392,13 +471,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.warp(block.timestamp + commitDuration); // Last second of commit window
 
@@ -440,13 +527,21 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.warp(block.timestamp + commitDuration + revealDuration + 1); // round has ended
 
@@ -552,15 +647,23 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.commitChoices(gameNumber, roundNumber, signature);
 
         vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         game.revealChoices(
             gameNumber,
@@ -571,8 +674,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
             numTriangles
         );
 
-        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertTrue(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertTrue(game.getPlayerHasRevealed(gameNumber, roundNumber, player1));
 
         vm.warp(block.timestamp + revealDuration - 1); // last second in round
 
@@ -616,8 +721,12 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.startPrank(player1);
 
-        assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-        assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
+        assertFalse(
+            game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
+        );
+        assertFalse(
+            game.getPlayerHasRevealed(gameNumber, roundNumber, player1)
+        );
 
         vm.expectRevert("ZigZagZog.commitChoices: round hasn't started yet");
         game.commitChoices(gameNumber, roundNumber, signature);

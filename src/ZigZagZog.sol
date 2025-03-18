@@ -300,4 +300,93 @@ contract ZigZagZog is EIP712 {
             }
         }
     }
+
+    //view functions
+    function getGameBalance(uint256 gameNumber) public view returns (uint256) {
+        return GameState[gameNumber].gameBalance;
+    }
+
+    function getPurchasedPlays(
+        uint256 gameNumber,
+        address player
+    ) public view returns (uint256) {
+        return GameState[gameNumber].purchasedPlays[player];
+    }
+
+    function getPlayerSurvivingPlays(
+        uint256 gameNumber,
+        address player
+    ) public view returns (uint256) {
+        return GameState[gameNumber].playerSurvivingPlays[player];
+    }
+
+    function getPlayerHasCommitted(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (bool) {
+        return GameState[gameNumber].playerHasCommitted[roundNumber][player];
+    }
+
+    function getPlayerCommittment(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (bytes memory) {
+        return GameState[gameNumber].playerCommittment[roundNumber][player];
+    }
+
+    function getPlayerHasRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (bool) {
+        return GameState[gameNumber].playerHasRevealed[roundNumber][player];
+    }
+
+    function getCirclesRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber
+    ) public view returns (uint256) {
+        return GameState[gameNumber].circlesRevealed[roundNumber];
+    }
+
+    function getSquaresRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber
+    ) public view returns (uint256) {
+        return GameState[gameNumber].squaredRevealed[roundNumber];
+    }
+
+    function getTrianglesRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber
+    ) public view returns (uint256) {
+        return GameState[gameNumber].trianglesRevealed[roundNumber];
+    }
+
+    function getPlayerCirclesRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (uint256) {
+        return GameState[gameNumber].playerCirclesRevealed[roundNumber][player];
+    }
+
+    function getPlayerSquaresRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (uint256) {
+        return GameState[gameNumber].playerSquaresRevealed[roundNumber][player];
+    }
+
+    function getPlayerTrianglesRevealed(
+        uint256 gameNumber,
+        uint256 roundNumber,
+        address player
+    ) public view returns (uint256) {
+        return
+            GameState[gameNumber].playerTrianglesRevealed[roundNumber][player];
+    }
 }
