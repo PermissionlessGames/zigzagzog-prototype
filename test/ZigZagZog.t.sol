@@ -4,43 +4,6 @@ pragma solidity ^0.8.13;
 import {Test, console} from "../lib/forge-std/src/Test.sol";
 import {ZigZagZog} from "../src/ZigZagZog.sol";
 
-struct Game {
-    //game number
-    uint256 gameNumber;
-    //game timestamp
-    uint256 gameTimestamp;
-    //round number
-    uint256 roundNumber;
-    //round timestamp
-    uint256 roundTimestamp;
-    //game balance
-    uint256 gameBalance;
-    //surviving plays
-    uint256 survivingPlays;
-    //player address => # of plays purchased
-    mapping(address => uint256) purchasedPlays;
-    //player address => # of surviving plays
-    mapping(address => uint256) playerSurvivingPlays;
-    //round number => player address => player has committed
-    mapping(uint256 => mapping(address => bool)) playerHasCommitted; //Might be redundant
-    //round number => player address => player commitment
-    mapping(uint256 => mapping(address => bytes)) playerCommittment;
-    //round number => player address => player has revealed
-    mapping(uint256 => mapping(address => bool)) playerHasRevealed;
-    //round number => # of circles revealed
-    mapping(uint256 => uint256) circlesRevealed;
-    //round number => # of squares revealed
-    mapping(uint256 => uint256) squaredRevealed;
-    //round number => # of triangles revealed
-    mapping(uint256 => uint256) trianglesRevealed;
-    //round number => player address => # of circles revealed by player
-    mapping(uint256 => mapping(address => uint256)) playerCirclesRevealed;
-    //round number => player address => # of squares revealed by player
-    mapping(uint256 => mapping(address => uint256)) playerSquaresRevealed;
-    //round number => player address => # of triangles revealed by player
-    mapping(uint256 => mapping(address => uint256)) playerTrianglesRevealed;
-}
-
 contract ZigZagZogTestBase is Test {
     ZigZagZog public game;
 
@@ -103,7 +66,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
         assertEq(game.getGameBalance(gameNumber), buyinAmount);
         assertEq(player1.balance, initialBalance - buyinAmount);
 
-        assertEq(game.getPurchasedPlays(gameNumber, player1), 10);
+        assertEq(game.getPurchasedPlays(gameNumber, 1, player1), 10);
     }
 
     function testRevert_if_value_is_insufficient_to_buy_a_hand() public {
@@ -121,7 +84,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         assertEq(player1.balance, initialBalance);
 
-        assertEq(game.getPurchasedPlays(gameNumber, player1), 0);
+        assertEq(game.getPurchasedPlays(gameNumber, 1, player1), 0);
     }
 
     function test_buy_hands_will_refund_excess_payment() public {
@@ -136,7 +99,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
 
         assertEq(player1.balance, initialBalance - playCost);
 
-        assertEq(game.getPurchasedPlays(gameNumber, player1), 10);
+        assertEq(game.getPurchasedPlays(gameNumber, 1, player1), 10);
     }
 }
 
@@ -145,6 +108,7 @@ contract ZigZagZogTest_buyHands is ZigZagZogTestBase {
  */
 contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     uint256 gameNumber;
+    uint256 roundNumber;
     uint256 handCount;
 
     function setUp() public virtual override {
@@ -158,11 +122,10 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         vm.stopPrank();
 
         gameNumber = game.currentGameNumber();
+        roundNumber = game.currentRoundNumber();
     }
 
     function test_commit_choices() public {
-        uint256 roundNumber = 1;
-
         assertFalse(
             game.getPlayerHasCommitted(gameNumber, roundNumber, player1)
         );
@@ -195,8 +158,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_commit_multiple_times() public {
-        uint256 roundNumber = 1;
-
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
         uint256 numSquares = 3;
@@ -240,8 +201,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function test_reveal_choices() public {
-        uint256 roundNumber = 1;
-
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
         uint256 numSquares = 3;
@@ -298,8 +257,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_reveal_multiple_times() public {
-        uint256 roundNumber = 1;
-
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
         uint256 numSquares = 3;
@@ -371,7 +328,7 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_reveal_with_invalid_signature() public {
-        uint256 roundNumber = 1;
+        roundNumber = 1;
 
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
@@ -449,8 +406,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_reveal_before_reveal_phase_begins() public {
-        uint256 roundNumber = 1;
-
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
         uint256 numSquares = 3;
@@ -505,8 +460,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_reveal_after_reveal_duration_has_elasped() public {
-        uint256 roundNumber = 1;
-
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
         uint256 numSquares = 3;
@@ -625,7 +578,7 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     // }
 
     function testRevert_commit_if_round_has_not_started() public {
-        uint256 roundNumber = 1; // Ask contract for round number?
+        //uint256 roundNumber = 1; // Ask contract for round number?
 
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
@@ -699,7 +652,7 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
     }
 
     function testRevert_if_commit_is_more_than_one_round_ahead() public {
-        uint256 roundNumber = 3; // Ask contract for round number?
+        roundNumber = 3; // Ask contract for round number?
 
         uint256 p1Nonce = 0x1902a;
         uint256 numCircles = 6;
