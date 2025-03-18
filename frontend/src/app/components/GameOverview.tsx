@@ -11,6 +11,12 @@ interface GameOverviewProps {
   buyInAmount: number;
   onBuyIn: () => void;
   isProcessing?: boolean;  // Added to show loading state
+  
+  // Timer related props
+  roundNumber: number;
+  roundTimestamp: number;
+  commitDuration: number;
+  revealDuration: number;
 }
 
 export function GameOverview({
@@ -19,7 +25,11 @@ export function GameOverview({
   lastGameMultiple,
   buyInAmount,
   onBuyIn,
-  isProcessing = false
+  isProcessing = false,
+  roundNumber,
+  roundTimestamp,
+  commitDuration,
+  revealDuration
 }: GameOverviewProps) {
   const { isConnected, isCorrectNetwork, currencySymbol } = useWeb3();
   
@@ -29,6 +39,10 @@ export function GameOverview({
         gameNumber={gameNumber}
         potSize={potSize}
         lastGameMultiple={lastGameMultiple}
+        roundNumber={roundNumber}
+        roundTimestamp={roundTimestamp}
+        commitDuration={commitDuration}
+        revealDuration={revealDuration}
       />
       
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>

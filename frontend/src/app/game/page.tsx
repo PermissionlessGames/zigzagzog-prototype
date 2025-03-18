@@ -62,6 +62,10 @@ export default function GamePage() {
         buyInAmount={gameData.playCost}
         onBuyIn={handleBuyIn}
         isProcessing={isBuying}
+        roundNumber={gameData.roundNumber}
+        roundTimestamp={gameData.roundTimestamp}
+        commitDuration={gameData.commitDuration}
+        revealDuration={gameData.revealDuration}
       />
       
       {/* Display toast for errors */}

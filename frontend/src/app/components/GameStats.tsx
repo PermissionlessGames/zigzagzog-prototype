@@ -1,13 +1,25 @@
+import GameTimer from './GameTimer';
+
 interface GameStatsProps {
   gameNumber: number;
   potSize: number;
   lastGameMultiple?: number;  // Optional in case it's the first game
+  
+  // Timer related props
+  roundNumber: number;
+  roundTimestamp: number;
+  commitDuration: number;
+  revealDuration: number;
 }
 
 export function GameStats({
   gameNumber,
   potSize,
   lastGameMultiple,
+  roundNumber,
+  roundTimestamp,
+  commitDuration,
+  revealDuration
 }: GameStatsProps) {
   // Show placeholder values if data isn't loaded yet
   const hasData = gameNumber > 0 || potSize > 0;
@@ -39,6 +51,16 @@ export function GameStats({
           </div>
         )}
       </div>
+      
+      {/* Game timer */}
+      {hasData && roundTimestamp > 0 && (
+        <GameTimer 
+          roundNumber={roundNumber}
+          roundTimestamp={roundTimestamp}
+          commitDuration={commitDuration}
+          revealDuration={revealDuration}
+        />
+      )}
     </div>
   );
 } 

@@ -9,6 +9,13 @@ interface GameData {
   potSize: number;
   lastGameMultiple?: number;
   playCost: number;
+  
+  // Round and timing information
+  roundNumber: number;
+  roundTimestamp: number;
+  commitDuration: number;
+  revealDuration: number;
+  
   error: string | null;
 }
 
@@ -22,6 +29,13 @@ export function useZigZagZog() {
     potSize: 0,
     lastGameMultiple: undefined,
     playCost: 0,
+    
+    // Round and timing information
+    roundNumber: 0,
+    roundTimestamp: 0,
+    commitDuration: 0,
+    revealDuration: 0,
+    
     error: null
   });
 
@@ -43,10 +57,17 @@ export function useZigZagZog() {
       const currentGameNumber = await contract.currentGameNumber();
       
       // Then get the rest of the data in parallel
-      const [playCost, gameBalance] = await Promise.all([
+      const [playCost, gameBalance, gameState, commitDuration, revealDuration] = await Promise.all([
         contract.playCost(),
-        contract.gameBalance(currentGameNumber)
+        contract.gameBalance(currentGameNumber),
+        contract.GameState(currentGameNumber),
+        contract.commitDuration(),
+        contract.revealDuration()
       ]);
+      
+      // Extract values from gameState
+      const roundNumber = Number(gameState.roundNumber);
+      const roundTimestamp = Number(gameState.roundTimestamp);
       
       // For previous game return multiple, if this isn't the first game
       let lastGameMultiple;
@@ -75,6 +96,13 @@ export function useZigZagZog() {
         potSize: Number(ethers.formatEther(gameBalance)),
         lastGameMultiple,
         playCost: Number(ethers.formatEther(playCost)),
+        
+        // Round and timing information
+        roundNumber,
+        roundTimestamp,
+        commitDuration: Number(commitDuration),
+        revealDuration: Number(revealDuration),
+        
         error: null
       }));
     } catch (error) {
