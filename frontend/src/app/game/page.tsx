@@ -26,10 +26,7 @@ export default function GamePage() {
     }
   };
 
-  // Show loading state
-  if (gameData.isLoading) {
-    return <div className="container">Loading game data...</div>;
-  }
+  // Remove loading screen entirely - it causes flickering
 
   // Show error message
   if (gameData.error) {

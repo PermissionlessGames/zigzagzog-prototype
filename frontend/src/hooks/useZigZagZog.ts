@@ -25,7 +25,7 @@ export function useZigZagZog() {
     potSize: 0,
     lastGameMultiple: undefined,
     playCost: 0,
-    isLoading: true,
+    isLoading: false, // Start with loading false to prevent flickering
     error: null
   });
 
@@ -41,11 +41,9 @@ export function useZigZagZog() {
     }
 
     try {
-      // Only show loading state on initial load or when explicitly forced
-      // This prevents flickering during periodic updates
-      if (isInitialLoadRef.current || forceLoadingState) {
-        setGameData(prev => ({ ...prev, isLoading: true, error: null }));
-      }
+      // Never show a loading state to avoid flickering
+      // Just clear any existing errors
+      setGameData(prev => ({ ...prev, error: null }));
 
       // First get the current game number
       const currentGameNumber = await contract.currentGameNumber();
@@ -84,7 +82,7 @@ export function useZigZagZog() {
         potSize: Number(ethers.formatEther(gameBalance)),
         lastGameMultiple,
         playCost: Number(ethers.formatEther(playCost)),
-        isLoading: false,
+        isLoading: false, // Always ensure loading is false
         error: null
       }));
     } catch (error) {
