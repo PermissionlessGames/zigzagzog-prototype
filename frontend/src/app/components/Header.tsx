@@ -14,9 +14,6 @@ export default function Header() {
           <strong>ZigZagZog</strong>
         </Link>
         <nav style={{ display: 'inline-block', marginLeft: '1rem' }}>
-          <Link href="/" style={{ marginRight: '1rem' }}>
-            Home
-          </Link>
           <Link 
             href={isConnected && isCorrectNetwork ? "/game" : "#"} 
             style={{ 
