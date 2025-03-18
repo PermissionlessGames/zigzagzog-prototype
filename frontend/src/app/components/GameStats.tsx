@@ -53,7 +53,7 @@ export function GameStats({
       </div>
       
       {/* Game timer */}
-      {hasData && roundTimestamp > 0 && (
+      {hasData && (commitDuration > 0 || revealDuration > 0) && (
         <GameTimer 
           roundNumber={roundNumber}
           roundTimestamp={roundTimestamp}

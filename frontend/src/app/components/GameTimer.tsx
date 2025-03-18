@@ -36,8 +36,29 @@ export default function GameTimer({
 
   // Calculate the current phase and time remaining
   useEffect(() => {
+    // First, check if this is a brand new game with no rounds started yet
+    if (roundNumber === 0 && roundTimestamp === 0) {
+      // Special case for new game that hasn't started yet
+      setCurrentPhase('nextRound');
+      setTimeRemaining(0);
+      return;
+    }
+
     const commitEndTime = roundTimestamp + commitDuration;
     const roundEndTime = commitEndTime + revealDuration;
+
+    // For debugging
+    console.log({
+      now,
+      roundNumber,
+      roundTimestamp,
+      commitDuration,
+      revealDuration,
+      commitEndTime,
+      roundEndTime,
+      timeLeft: commitEndTime - now,
+      phase: now <= commitEndTime ? 'commit' : now <= roundEndTime ? 'reveal' : 'nextRound'
+    });
 
     // Determine current phase
     if (now <= commitEndTime) {
@@ -53,7 +74,7 @@ export default function GameTimer({
       setCurrentPhase('nextRound');
       setTimeRemaining(0); // No countdown for next round as it depends on player actions
     }
-  }, [now, roundTimestamp, commitDuration, revealDuration]);
+  }, [now, roundTimestamp, commitDuration, revealDuration, roundNumber]);
 
   // Format time remaining as mm:ss
   const formatTime = (seconds: number): string => {
@@ -69,11 +90,14 @@ export default function GameTimer({
   const getPhaseText = (): string => {
     switch (currentPhase) {
       case 'commit':
-        return 'Commit Phase';
+        return `Round ${roundNumber}: Commit Phase`;
       case 'reveal':
-        return 'Reveal Phase';
+        return `Round ${roundNumber}: Reveal Phase`;
       case 'nextRound':
-        return 'Waiting for Next Round';
+        if (roundNumber === 0 && roundTimestamp === 0) {
+          return 'Game Ready to Start';
+        }
+        return `Round ${roundNumber} Complete`;
       default:
         return '';
     }
@@ -118,7 +142,9 @@ export default function GameTimer({
       )}
       {currentPhase === 'nextRound' && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-          Round complete. New round starts on first commitment.
+          {roundNumber === 0 && roundTimestamp === 0 
+            ? "Game is ready to start. First player to commit will start Round 1."
+            : `Round ${roundNumber} complete. New round starts on first commitment.`}
         </div>
       )}
     </div>
