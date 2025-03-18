@@ -6,7 +6,7 @@ import { useWeb3 } from '@/contexts/Web3Context';
 
 interface GameOverviewProps {
   gameNumber: number;
-  playerCount: number;
+  handsCount: number;  // Changed from playerCount to handsCount
   potSize: number;
   lastGameMultiple?: number;  // Optional in case it's the first game
   buyInAmount: number;
@@ -16,7 +16,7 @@ interface GameOverviewProps {
 
 export function GameOverview({
   gameNumber,
-  playerCount,
+  handsCount,
   potSize,
   lastGameMultiple,
   buyInAmount,
@@ -29,7 +29,7 @@ export function GameOverview({
     <div className="container">
       <GameStats
         gameNumber={gameNumber}
-        playerCount={playerCount}
+        handsCount={handsCount}
         potSize={potSize}
         lastGameMultiple={lastGameMultiple}
       />

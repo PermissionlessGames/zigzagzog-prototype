@@ -42,7 +42,7 @@ export default function GamePage() {
     <>
       <GameOverview
         gameNumber={gameData.gameNumber}
-        playerCount={gameData.playerCount}
+        handsCount={gameData.handsCount}
         potSize={gameData.potSize}
         lastGameMultiple={gameData.lastGameMultiple}
         buyInAmount={gameData.playCost}

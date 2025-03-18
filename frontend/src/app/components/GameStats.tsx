@@ -1,13 +1,13 @@
 interface GameStatsProps {
   gameNumber: number;
-  playerCount: number;
+  handsCount: number;  // Changed from playerCount to handsCount
   potSize: number;
   lastGameMultiple?: number;  // Optional in case it's the first game
 }
 
 export function GameStats({
   gameNumber,
-  playerCount,
+  handsCount,
   potSize,
   lastGameMultiple,
 }: GameStatsProps) {
@@ -32,7 +32,7 @@ export function GameStats({
       
       <div className="card">
         <div className="flex-between" style={{ marginBottom: '1rem' }}>
-          <div><strong>Players:</strong> {hasData ? formatNumber(playerCount) : '...'}</div>
+          <div><strong>Hands Purchased:</strong> {hasData ? formatNumber(handsCount) : '...'}</div>
           <div><strong>Pot Size:</strong> {hasData ? formatNumber(potSize) + ' TG7T' : '...'}</div>
         </div>
         
