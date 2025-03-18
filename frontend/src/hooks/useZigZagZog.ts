@@ -6,7 +6,6 @@ import { ethers } from 'ethers';
 
 interface GameData {
   gameNumber: number;
-  handsCount: number; // Number of hands purchased instead of players
   potSize: number;
   lastGameMultiple?: number;
   playCost: number;
@@ -20,7 +19,6 @@ export function useZigZagZog() {
   
   const [gameData, setGameData] = useState<GameData>({
     gameNumber: 0,
-    handsCount: 0,
     potSize: 0,
     lastGameMultiple: undefined,
     playCost: 0,
@@ -70,16 +68,10 @@ export function useZigZagZog() {
       // Mark initial load as complete
       isInitialLoadRef.current = false;
 
-      // Calculate number of hands purchased (pot size divided by play cost)
-      const handsPurchased = playCost.gt(0)
-        ? Math.floor(Number(gameBalance) / Number(playCost))
-        : 0;
-
       // Update state with contract data
       setGameData(prev => ({
         ...prev, // Keep any existing data during transitions
         gameNumber: Number(currentGameNumber),
-        handsCount: handsPurchased,
         potSize: Number(ethers.formatEther(gameBalance)),
         lastGameMultiple,
         playCost: Number(ethers.formatEther(playCost)),
