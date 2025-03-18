@@ -22,7 +22,7 @@ export default function GamePage() {
         setToastMessage(`Transaction Error: ${result.error}`);
         setToastType('error');
       } else if (result.success) {
-        setToastMessage('Successfully bought hand!');
+        setToastMessage('Successfully bought plays!');
         setToastType('success');
       }
     } catch (error) {

@@ -117,15 +117,18 @@ export function useZigZagZog() {
   };
 
   // Handle buying plays
-  const buyPlays = async () => {
+  const buyPlays = async (quantity = 1) => {
     if (!contract || !isConnected || !isCorrectNetwork) {
       return { success: false, error: "Wallet not connected or wrong network" };
     }
 
     try {
+      // Calculate cost for specified number of plays
+      const totalCost = ethers.parseEther((gameData.playCost * quantity).toString());
+      
       // Call the buyPlays function on the contract
       const tx = await contract.buyPlays({
-        value: ethers.parseEther(gameData.playCost.toString())
+        value: totalCost
       });
 
       // Wait for transaction to be mined
@@ -134,7 +137,7 @@ export function useZigZagZog() {
       // Refresh data after successful transaction
       await fetchGameData();
       
-      return { success: true, error: null };
+      return { success: true, plays: quantity, error: null };
     } catch (error) {
       console.error("Error during buy-in:", error);
       return { 

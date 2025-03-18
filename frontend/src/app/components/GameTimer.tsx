@@ -143,8 +143,8 @@ export default function GameTimer({
       {currentPhase === 'nextRound' && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
           {roundNumber === 0 && roundTimestamp === 0 
-            ? "Game is ready to start. First player to commit will start Round 1."
-            : `Round ${roundNumber} complete. New round starts on first commitment.`}
+            ? "First player to commit plays will start Round 1."
+            : `Round ${roundNumber} complete. Round ${roundNumber + 1} starts on next commitment.`}
         </div>
       )}
     </div>

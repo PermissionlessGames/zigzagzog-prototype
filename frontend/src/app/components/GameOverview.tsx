@@ -51,18 +51,23 @@ export function GameOverview({
         ) : !isCorrectNetwork ? (
           <p>Switch to the correct network to play</p>
         ) : (
-          <button 
-            onClick={onBuyIn}
-            disabled={isProcessing}
-            style={{ 
-              fontSize: '1.1rem', 
-              padding: '0.6rem 1.2rem',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              opacity: isProcessing ? 0.7 : 1
-            }}
-          >
-            {isProcessing ? 'Processing...' : `Buy in: ${buyInAmount} ${currencySymbol} / hand`}
-          </button>
+          <div>
+            <button 
+              onClick={onBuyIn}
+              disabled={isProcessing}
+              style={{ 
+                fontSize: '1.1rem', 
+                padding: '0.6rem 1.2rem',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                opacity: isProcessing ? 0.7 : 1
+              }}
+            >
+              {isProcessing ? 'Processing...' : `Buy plays: ${buyInAmount} ${currencySymbol} / play`}
+            </button>
+            <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
+              You can buy multiple plays by sending more ETH. The amount will be calculated automatically.
+            </div>
+          </div>
         )}
       </div>
     </div>
