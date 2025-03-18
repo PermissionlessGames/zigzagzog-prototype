@@ -1,3 +1,5 @@
+import { createContext, useContext } from "react";
+
 interface NetworkConfig {
     rpcUrl: string;
     contractAddress: string;
@@ -50,3 +52,8 @@ export const toWei = (amount: number): string => {
 export const fromWei = (amount: string): number => {
     return parseFloat(amount) / Math.pow(10, config.currencyDecimals);
 }; 
+
+export const ConfigContext = createContext(config);
+export const useConfig = () => useContext(ConfigContext);
+
+export default config;
