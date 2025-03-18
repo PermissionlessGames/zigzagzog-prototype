@@ -11,6 +11,7 @@ interface GameOverviewProps {
   lastGameMultiple?: number;  // Optional in case it's the first game
   buyInAmount: number;
   onBuyIn: () => void;
+  isProcessing?: boolean;  // Added to show loading state
 }
 
 export function GameOverview({
@@ -19,7 +20,8 @@ export function GameOverview({
   potSize,
   lastGameMultiple,
   buyInAmount,
-  onBuyIn
+  onBuyIn,
+  isProcessing = false
 }: GameOverviewProps) {
   const { isConnected, isCorrectNetwork, currencySymbol } = useWeb3();
   
@@ -39,10 +41,16 @@ export function GameOverview({
           <p>Switch to the correct network to play</p>
         ) : (
           <button 
-            onClick={onBuyIn} 
-            style={{ fontSize: '1.1rem', padding: '0.6rem 1.2rem' }}
+            onClick={onBuyIn}
+            disabled={isProcessing}
+            style={{ 
+              fontSize: '1.1rem', 
+              padding: '0.6rem 1.2rem',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              opacity: isProcessing ? 0.7 : 1
+            }}
           >
-            Buy in: {buyInAmount} {currencySymbol} / hand
+            {isProcessing ? 'Processing...' : `Buy in: ${buyInAmount} ${currencySymbol} / hand`}
           </button>
         )}
       </div>
