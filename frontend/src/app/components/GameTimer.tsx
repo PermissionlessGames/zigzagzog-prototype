@@ -48,7 +48,7 @@ export default function GameTimer({
     const roundEndTime = commitEndTime + revealDuration;
 
     // For debugging
-    console.log({
+    console.log('GameTimer Debug:', {
       now,
       roundNumber,
       roundTimestamp,
@@ -57,7 +57,8 @@ export default function GameTimer({
       commitEndTime,
       roundEndTime,
       timeLeft: commitEndTime - now,
-      phase: now <= commitEndTime ? 'commit' : now <= roundEndTime ? 'reveal' : 'nextRound'
+      phase: now <= commitEndTime ? 'commit' : now <= roundEndTime ? 'reveal' : 'nextRound',
+      currentPhase  // Current state value before update
     });
 
     // Determine current phase
