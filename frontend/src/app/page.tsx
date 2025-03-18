@@ -1,49 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { Shape } from './components/Shape';
 import { useWeb3 } from '@/contexts/Web3Context';
 
 export default function Home() {
-  const [hoveredShape, setHoveredShape] = useState<string | null>(null);
   const { isConnected, isCorrectNetwork } = useWeb3();
 
   return (
     <div className="container">
-      <div>
-        <h1 className="title">Zig Zag Zog</h1>
-        <div className="card-grid">
-          {['circle', 'square', 'triangle', 'diamond'].map((shape) => (
-            <div 
-              key={shape} 
-              className="card"
-              onMouseEnter={() => setHoveredShape(shape)}
-              onMouseLeave={() => setHoveredShape(null)}
-            >
-              <Shape 
-                type={shape as 'circle' | 'square' | 'triangle' | 'diamond'} 
-                isActive={hoveredShape === shape}
-              />
+      <div style={{ textAlign: 'center' }}>
+        <h1>Welcome to Zig Zag Zog</h1>
+        <p>A simple blockchain game of shapes and strategy.</p>
+        
+        <div className="grid" style={{ maxWidth: '600px', margin: '2rem auto' }}>
+          {['▲', '■', '●', '◆'].map((shape) => (
+            <div key={shape} className="card" style={{ textAlign: 'center', fontSize: '2rem' }}>
+              {shape}
             </div>
           ))}
         </div>
-        <button 
-          className={`blink-button ${!isConnected || !isCorrectNetwork ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={!isConnected || !isCorrectNetwork}
-        >
-          <Link 
-            href={isConnected && isCorrectNetwork ? "/game" : "#"} 
-            style={{ color: 'inherit', textDecoration: 'none' }}
-            onClick={(e) => {
-              if (!isConnected || !isCorrectNetwork) {
-                e.preventDefault();
-              }
-            }}
-          >
-            {isConnected && isCorrectNetwork ? "Play Now" : "Connect Wallet to Play"}
-          </Link>
-        </button>
+        
+        <div style={{ margin: '2rem 0' }}>
+          {!isConnected ? (
+            <p>Please connect your wallet to play the game.</p>
+          ) : !isCorrectNetwork ? (
+            <p>Please switch to the correct network to play.</p>
+          ) : (
+            <Link 
+              href="/game" 
+              className="button"
+              style={{ fontSize: '1.2rem', padding: '0.5rem 1.5rem' }}
+            >
+              Play Now
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

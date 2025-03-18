@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { GameStats } from './GameStats';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 interface GameOverviewProps {
   gameNumber: number;
@@ -20,17 +21,31 @@ export function GameOverview({
   buyInAmount,
   onBuyIn
 }: GameOverviewProps) {
+  const { isConnected, isCorrectNetwork, currencySymbol } = useWeb3();
+  
   return (
-    <div className="game-overview">
+    <div className="container">
       <GameStats
         gameNumber={gameNumber}
         playerCount={playerCount}
         potSize={potSize}
         lastGameMultiple={lastGameMultiple}
       />
-      <button onClick={onBuyIn} className="blink-button">
-        Buy in: {buyInAmount} G7 / hand
-      </button>
+      
+      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+        {!isConnected ? (
+          <p>Connect your wallet to play</p>
+        ) : !isCorrectNetwork ? (
+          <p>Switch to the correct network to play</p>
+        ) : (
+          <button 
+            onClick={onBuyIn} 
+            style={{ fontSize: '1.1rem', padding: '0.6rem 1.2rem' }}
+          >
+            Buy in: {buyInAmount} {currencySymbol} / hand
+          </button>
+        )}
+      </div>
     </div>
   );
 } 

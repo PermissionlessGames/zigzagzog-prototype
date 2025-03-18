@@ -28,10 +28,7 @@ export default function WalletConnect() {
 
   if (!isConnected) {
     return (
-      <button 
-        onClick={handleConnect}
-        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
-      >
+      <button onClick={handleConnect}>
         Connect Wallet
       </button>
     );
@@ -39,25 +36,19 @@ export default function WalletConnect() {
 
   if (!isCorrectNetwork) {
     return (
-      <button 
-        onClick={handleSwitchNetwork}
-        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-md transition-colors"
-      >
+      <button onClick={handleSwitchNetwork}>
         Switch Network
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex flex-col items-end text-right">
-        <div className="text-sm font-mono">{formatAddress(account)}</div>
-        <div className="text-xs text-gray-300">{balance} {currencySymbol}</div>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+      <div className="wallet-info">
+        <div>{formatAddress(account)}</div>
+        <div style={{ fontSize: '0.8rem' }}>{balance} {currencySymbol}</div>
       </div>
-      <button 
-        onClick={disconnect}
-        className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
-      >
+      <button onClick={disconnect}>
         Disconnect
       </button>
     </div>

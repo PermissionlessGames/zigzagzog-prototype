@@ -22,23 +22,22 @@ export function GameStats({
   };
 
   return (
-    <div className="game-stats">
-      <div className="game-stats-header">
-        <h1 className="game-stats-title">Game {gameNumber}</h1>
-        <div className="game-stats-symbols">
-          ○ ∆ □ ◊
-        </div>
+    <div className="game-info">
+      <div style={{ marginBottom: '1rem' }}>
+        <h2>Game #{gameNumber}</h2>
+        <div>● ▲ ■ ◆</div>
       </div>
-      <div className="game-stats-info">
-        <div className="game-stats-main">
-          <p className="game-stats-players">{formatNumber(playerCount)} players</p>
-          <span className="game-stats-separator">|</span>
-          <p className="game-stats-pot">{formatNumber(potSize)} G7 in pot</p>
+      
+      <div className="card">
+        <div className="flex-between" style={{ marginBottom: '1rem' }}>
+          <div><strong>Players:</strong> {formatNumber(playerCount)}</div>
+          <div><strong>Pot Size:</strong> {formatNumber(potSize)} TG7T</div>
         </div>
+        
         {lastGameMultiple && (
-          <p className="game-stats-multiples">
-            Last game return on winning hands: {lastGameMultiple}x
-          </p>
+          <div>
+            <strong>Last Game Return:</strong> {lastGameMultiple}x
+          </div>
         )}
       </div>
     </div>
