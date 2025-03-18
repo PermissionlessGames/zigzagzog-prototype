@@ -241,6 +241,14 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        console.log("Shape-player counts: ");
+        console.log(game.circlePlayerCount(gameNumber, roundNumber));
+        console.log(game.squarePlayerCount(gameNumber, roundNumber));
+        console.log(game.trianglePlayerCount(gameNumber, roundNumber));
+
+        vm.warp(block.timestamp + revealDuration);
+        assertTrue(game.hasGameEnded(gameNumber));
+
         vm.stopPrank();
     }
 
