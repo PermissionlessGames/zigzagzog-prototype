@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useWeb3 } from '@/contexts/Web3Context';
 import { ethers } from 'ethers';
 
@@ -16,6 +16,9 @@ interface GameData {
 
 export function useZigZagZog() {
   const { contract, isConnected, isCorrectNetwork } = useWeb3();
+  // Track initial load state
+  const isInitialLoadRef = useRef(true);
+  
   const [gameData, setGameData] = useState<GameData>({
     gameNumber: 0,
     playerCount: 0,
@@ -27,7 +30,7 @@ export function useZigZagZog() {
   });
 
   // Fetch game data from the contract
-  const fetchGameData = async () => {
+  const fetchGameData = async (forceLoadingState = false) => {
     if (!contract || !isConnected || !isCorrectNetwork) {
       setGameData(prev => ({ 
         ...prev,
@@ -38,22 +41,26 @@ export function useZigZagZog() {
     }
 
     try {
-      setGameData(prev => ({ ...prev, isLoading: true, error: null }));
+      // Only show loading state on initial load or when explicitly forced
+      // This prevents flickering during periodic updates
+      if (isInitialLoadRef.current || forceLoadingState) {
+        setGameData(prev => ({ ...prev, isLoading: true, error: null }));
+      }
 
-      // Get current game number
+      // First get the current game number
       const currentGameNumber = await contract.currentGameNumber();
       
-      // Get play cost
-      const playCost = await contract.playCost();
-      
-      // Get game balance (pot size)
-      const gameBalance = await contract.gameBalance(currentGameNumber);
+      // Then get the rest of the data in parallel
+      const [playCost, gameBalance] = await Promise.all([
+        contract.playCost(),
+        contract.gameBalance(currentGameNumber)
+      ]);
       
       // For previous game return multiple, if this isn't the first game
       let lastGameMultiple;
-      if (currentGameNumber > 0) {
+      if (Number(currentGameNumber) > 0) {
         try {
-          const previousGameBalance = await contract.gameBalance(currentGameNumber - 1);
+          const previousGameBalance = await contract.gameBalance(Number(currentGameNumber) - 1);
           
           // This is a simple calculation - in a real implementation,
           // you would need to analyze the contract to determine the actual formula
@@ -66,8 +73,12 @@ export function useZigZagZog() {
         }
       }
 
+      // Mark initial load as complete
+      isInitialLoadRef.current = false;
+
       // Update state with contract data
-      setGameData({
+      setGameData(prev => ({
+        ...prev, // Keep any existing data during transitions
         gameNumber: Number(currentGameNumber),
         playerCount: 0, // We need an event listener to count participants
         potSize: Number(ethers.formatEther(gameBalance)),
@@ -75,9 +86,10 @@ export function useZigZagZog() {
         playCost: Number(ethers.formatEther(playCost)),
         isLoading: false,
         error: null
-      });
+      }));
     } catch (error) {
       console.error("Error loading contract data:", error);
+      // Only update error state, preserve previous data
       setGameData(prev => ({ 
         ...prev, 
         isLoading: false, 
@@ -101,8 +113,8 @@ export function useZigZagZog() {
       // Wait for transaction to be mined
       await tx.wait();
       
-      // Refresh data after successful transaction
-      await fetchGameData();
+      // Refresh data after successful transaction - without loading state
+      await fetchGameData(false);
       
       return { success: true, error: null };
     } catch (error) {
@@ -116,17 +128,41 @@ export function useZigZagZog() {
 
   // Load data on initial render and when contract/connection state changes
   useEffect(() => {
-    fetchGameData();
+    // Reset initial load flag when dependencies change
+    isInitialLoadRef.current = true;
     
-    // Set up periodic refresh
-    const refreshInterval = setInterval(fetchGameData, 30000); // Refresh every 30 seconds
+    // Initial load (will show loading indicator on first load)
+    fetchGameData(false);
     
-    return () => clearInterval(refreshInterval);
+    // Track if the component is mounted
+    let isMounted = true;
+    
+    // For periodic silent refreshes
+    let refreshInterval: NodeJS.Timeout | null = null;
+    
+    // Set up silent refresh at a reasonable interval
+    // Only if we have contract and connection
+    if (contract && isConnected && isCorrectNetwork) {
+      refreshInterval = setInterval(() => {
+        if (isMounted) {
+          // Silent refresh (no loading indicator)
+          fetchGameData(false);
+        }
+      }, 15000); // 15 seconds delay
+    }
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
   }, [contract, isConnected, isCorrectNetwork]);
 
   return {
     gameData,
     buyPlays,
-    refreshGameData: fetchGameData
+    refreshGameData: (forceLoading = false) => fetchGameData(forceLoading)
   };
 }

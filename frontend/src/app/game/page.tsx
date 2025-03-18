@@ -5,7 +5,7 @@ import { GameOverview } from '../components/GameOverview';
 import { useZigZagZog } from '@/hooks/useZigZagZog';
 
 export default function GamePage() {
-  const { gameData, buyPlays } = useZigZagZog();
+  const { gameData, buyPlays, refreshGameData } = useZigZagZog();
   const [isBuying, setIsBuying] = useState(false);
   const [txError, setTxError] = useState<string | null>(null);
   
@@ -36,7 +36,7 @@ export default function GamePage() {
     return (
       <div className="container">
         <div style={{ marginBottom: '1rem' }}>Error: {gameData.error}</div>
-        <button onClick={() => window.location.reload()}>Retry</button>
+        <button onClick={() => refreshGameData(true)}>Retry</button>
       </div>
     );
   }
