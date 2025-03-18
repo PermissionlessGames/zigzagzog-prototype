@@ -1,9 +1,9 @@
 name: CI
 
 on:
-  push:
   pull_request:
-  workflow_dispatch:
+    branches:
+      - main
 
 env:
   FOUNDRY_PROFILE: ci
