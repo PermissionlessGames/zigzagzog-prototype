@@ -12,13 +12,11 @@ function PlayQuantitySelector({
   value, 
   onChange, 
   min = 1, 
-  max = 10, 
   disabled = false 
 }: { 
   value: number, 
   onChange: (value: number) => void, 
   min?: number, 
-  max?: number, 
   disabled?: boolean 
 }) {
   return (
@@ -54,17 +52,16 @@ function PlayQuantitySelector({
         <input
           type="number"
           min={min}
-          max={max}
           value={value}
           onChange={(e) => {
             const newValue = parseInt(e.target.value, 10);
-            if (!isNaN(newValue) && newValue >= min && newValue <= max) {
+            if (!isNaN(newValue) && newValue >= min) {
               onChange(newValue);
             }
           }}
           disabled={disabled}
           style={{
-            width: '3rem',
+            width: '4rem',
             border: 'none',
             textAlign: 'center',
             fontSize: '1rem',
@@ -73,15 +70,15 @@ function PlayQuantitySelector({
           }}
         />
         <button 
-          onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={disabled || value >= max}
+          onClick={() => onChange(value + 1)}
+          disabled={disabled}
           style={{
             padding: '0.5rem 0.8rem',
             backgroundColor: disabled ? '#f0f0f0' : '#fff',
             border: 'none',
             borderLeft: '1px solid #ccc',
-            cursor: disabled || value >= max ? 'not-allowed' : 'pointer',
-            opacity: disabled || value >= max ? 0.6 : 1
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.6 : 1
           }}
         >
           +
@@ -447,7 +444,6 @@ export function GameOverview({
               onChange={setPlayQuantity}
               disabled={isProcessing}
               min={1}
-              max={20}
             />
             
             <button 
@@ -490,7 +486,6 @@ export function GameOverview({
               onChange={setPlayQuantity}
               disabled={isProcessing}
               min={1}
-              max={20}
             />
             
             <button 
@@ -660,7 +655,6 @@ export function GameOverview({
                 onChange={setPlayQuantity}
                 disabled={isProcessing}
                 min={1}
-                max={20}
               />
               
               <button 
