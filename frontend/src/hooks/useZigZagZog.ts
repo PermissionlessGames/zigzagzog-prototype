@@ -220,7 +220,7 @@ export function useZigZagZog() {
       let hasRevealed = false;
       let playerRemainingPlays = 0;
       
-      // Fetch commitment count and revealed shapes
+      // Fetch revealed shapes
       let commitCount = 0;
       let revealedCircles = 0;
       let revealedSquares = 0;
@@ -243,55 +243,21 @@ export function useZigZagZog() {
             revealedSquares = Number(squarePlayerCount);
             revealedTriangles = Number(trianglePlayerCount);
             
-            // Since we don't have a direct getter for total commitments, we need to estimate
-            // NOTE: This is entirely separate from the revealed shapes above
-            // A clean implementation would emit an event or have a counter in the contract
-            const now = Math.floor(Date.now() / 1000);
-            const commitEndTime = roundTimestamp + Number(commitDuration);
-            
-            // Reasonable estimate for committed players
+            // Set a fixed commit count that won't flicker
+            // The contract doesn't track the total number of commits directly
+            // To avoid flickering, we'll set a conservative estimate based on the reveal counts
             if (hasCommitted) {
-              // If the player has committed, count starts at 1
+              // If the player has committed, we know at least 1 player committed
               commitCount = 1;
-              
-              // Add estimated other players based on phase
-              if (now <= commitEndTime) {
-                // Still in commit phase - estimate other players
-                const timeRatio = (now - roundTimestamp) / Number(commitDuration);
-                
-                if (timeRatio < 0.3) {
-                  // Early in the commit phase - likely not many others yet
-                  commitCount += Math.floor(Math.random() * 2); // 0-1 others
-                } else if (timeRatio < 0.7) {
-                  // Middle of commit phase - more have likely committed
-                  commitCount += Math.floor(Math.random() * 3) + 1; // 1-3 others
-                } else {
-                  // Late in commit phase - most committed by now
-                  commitCount += Math.floor(Math.random() * 4) + 2; // 2-5 others
-                }
-              } else {
-                // In reveal phase - use a reasonable number based on game activity
-                // Note: Commitment count is NOT the same as reveal counts
-                // Players who committed might not reveal
-                commitCount = Math.max(commitCount, Math.floor(Math.random() * 4) + 3); // 3-6 total
-              }
-            } else {
-              // Player hasn't committed
-              if (now <= commitEndTime) {
-                // Still in commit phase
-                const timeRatio = (now - roundTimestamp) / Number(commitDuration);
-                if (timeRatio < 0.5) {
-                  // Early in phase
-                  commitCount = Math.floor(Math.random() * 3) + 1; // 1-3 players
-                } else {
-                  // Later in phase
-                  commitCount = Math.floor(Math.random() * 4) + 2; // 2-5 players
-                }
-              } else {
-                // In reveal phase
-                commitCount = Math.floor(Math.random() * 5) + 3; // 3-7 players committed
-              }
             }
+            
+            // If there are players who have revealed, use that as a minimum for commit count
+            // (since players must commit before they can reveal)
+            const revealedPlayerCount = Math.max(revealedCircles, revealedSquares, revealedTriangles);
+            if (revealedPlayerCount > commitCount) {
+              commitCount = revealedPlayerCount;
+            }
+            
           } catch (error) {
             console.error("Error fetching game statistics:", error);
             // Fallback to default values if contract call fails

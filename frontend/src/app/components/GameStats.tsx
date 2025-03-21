@@ -120,21 +120,27 @@ export function GameStats({
           />
         )}
         
-        {/* Show commit count during commit phase */}
-        {currentPhase === 'commit' && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '0.5rem', 
-            backgroundColor: 'rgba(0, 123, 255, 0.1)', 
-            borderRadius: '0.25rem',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Commit Phase</div>
-            <div>
-              <strong>{commitCount}</strong> {commitCount === 1 ? 'player has' : 'players have'} committed
-            </div>
+        {/* Show commit phase info regardless of phase */}
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '0.5rem', 
+          backgroundColor: currentPhase === 'commit' ? 'rgba(0, 123, 255, 0.1)' : 'rgba(0, 123, 255, 0.05)', 
+          borderRadius: '0.25rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>
+            {currentPhase === 'commit' ? 'Commit Phase' : 'Commits'}
           </div>
-        )}
+          <div>
+            {commitCount > 0 ? (
+              <div>
+                <strong>{commitCount}</strong> {commitCount === 1 ? 'player has' : 'players have'} committed
+              </div>
+            ) : (
+              <div>Waiting for players to commit</div>
+            )}
+          </div>
+        </div>
         
         {/* Show revealed shapes during reveal phase */}
         {currentPhase === 'reveal' && (
