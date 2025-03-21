@@ -18,7 +18,7 @@ interface NetworkConfig {
 // Default configuration for Game7 testnet
 const defaultConfig: NetworkConfig = {
   rpcUrl: "https://testnet.game7.io/",
-  contractAddress: "0x5297c340941065ab3f4253f92DA21749751813D4",
+  contractAddress: "0x230a2Bd1f6e1218406A52f38C1De66d816CDCA0A",
   currencySymbol: "TG7T",
   currencyDecimals: 18,
   networkName: "Game7 Testnet",
