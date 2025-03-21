@@ -15,7 +15,7 @@ export default function Header() {
         </Link>
         <nav style={{ display: 'inline-block', marginLeft: '1rem' }}>
           <Link 
-            href={isConnected && isCorrectNetwork ? "/game" : "#"} 
+            href={isConnected && isCorrectNetwork ? "/" : "#"} 
             style={{ 
               opacity: !isConnected || !isCorrectNetwork ? 0.5 : 1,
               cursor: !isConnected || !isCorrectNetwork ? 'not-allowed' : 'pointer'

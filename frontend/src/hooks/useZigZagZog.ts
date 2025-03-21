@@ -32,6 +32,14 @@ export interface GameData {
     triangles: number;
   };
   
+  // Previous round data
+  previousRoundShapes?: {
+    circles: number;
+    squares: number;
+    triangles: number;
+    eliminationResult?: string; // Which shape was eliminated
+  };
+  
   error: string | null;
 }
 
@@ -75,6 +83,14 @@ export function useZigZagZog() {
       triangles: 0
     },
     
+    // Previous round data
+    previousRoundShapes: {
+      circles: 0,
+      squares: 0,
+      triangles: 0,
+      eliminationResult: undefined
+    },
+    
     error: null
   });
 
@@ -112,14 +128,13 @@ export function useZigZagZog() {
         targetGameNumber : 
         Number(currentContractGameNumber);
       
-      // Then get the rest of the data in parallel
-      const [playCost, gameBalance, gameState, commitDuration, revealDuration, gameEnded] = await Promise.all([
+      // Then get the rest of the data in parallel - skip hasGameEnded since it's broken
+      const [playCost, gameBalance, gameState, commitDuration, revealDuration] = await Promise.all([
         contract.playCost(),
         contract.gameBalance(currentGameNumber),
         contract.GameState(currentGameNumber),
         contract.commitDuration(),
-        contract.revealDuration(),
-        contract.hasGameEnded(currentGameNumber)
+        contract.revealDuration()
       ]);
       
       // Extract values from gameState
@@ -141,6 +156,62 @@ export function useZigZagZog() {
           }
         } catch (error) {
           console.error("Error fetching previous game data:", error);
+        }
+      }
+
+      // Fetch previous round data if we're past round 1
+      let previousRoundShapes = {
+        circles: 0,
+        squares: 0,
+        triangles: 0,
+        eliminationResult: undefined
+      };
+      
+      if (roundNumber > 1) {
+        try {
+          const previousRoundNumber = roundNumber - 1;
+          const [prevCircles, prevSquares, prevTriangles] = await Promise.all([
+            contract.circlePlayerCount(currentGameNumber, previousRoundNumber),
+            contract.squarePlayerCount(currentGameNumber, previousRoundNumber),
+            contract.trianglePlayerCount(currentGameNumber, previousRoundNumber)
+          ]);
+          
+          previousRoundShapes = {
+            circles: Number(prevCircles),
+            squares: Number(prevSquares),
+            triangles: Number(prevTriangles),
+            eliminationResult: undefined
+          };
+          
+          // Determine which shape was eliminated
+          const circleCount = Number(prevCircles);
+          const squareCount = Number(prevSquares);
+          const triangleCount = Number(prevTriangles);
+          
+          if (circleCount > squareCount) {
+            if (circleCount >= triangleCount) {
+              previousRoundShapes.eliminationResult = "Circle";
+            } else {
+              previousRoundShapes.eliminationResult = "Triangle";
+            }
+          } else if (circleCount === squareCount) {
+            if (circleCount < triangleCount) {
+              previousRoundShapes.eliminationResult = "Triangle";
+            } else if (circleCount === triangleCount) {
+              previousRoundShapes.eliminationResult = "None";
+            } else {
+              previousRoundShapes.eliminationResult = "Circle";
+            }
+          } else {
+            if (squareCount >= triangleCount) {
+              previousRoundShapes.eliminationResult = "Square";
+            } else {
+              previousRoundShapes.eliminationResult = "Triangle";
+            }
+          }
+          
+        } catch (error) {
+          console.error("Error fetching previous round data:", error);
         }
       }
 
@@ -261,49 +332,24 @@ export function useZigZagZog() {
         }
       }
       
-      // Use the contract's hasGameEnded function but with additional checks
-      // The contract's hasGameEnded function has an issue where it returns true
-      // when eliminationResult is NothingEliminated (all shapes have equal count)
-      // We need to add extra checks to determine if the game has truly ended
+      // Simple game ended detection - avoid using contract's hasGameEnded which has issues
+      // Instead use a simplified approach based on round data
+      let isGameEnded = false;
       
-      let isGameEnded = gameEnded;
-      
-      // Additional sanity checks to prevent showing "Game Ended" incorrectly
-      // If there are no reveals yet (all counts are 0), the game can't have ended
-      if (isGameEnded && 
-          roundNumber > 0 && 
+      // Determine if the game has ended based on basic game state
+      // A game with no rounds is not ended
+      if (roundNumber === 0) {
+        isGameEnded = false;
+      } 
+      // Consider a game ended if all three shape counts are 0 but we're past round 1
+      else if (roundNumber > 1 && 
           revealedCircles === 0 && 
           revealedSquares === 0 && 
           revealedTriangles === 0) {
-        // Game can't have ended if nothing has been revealed yet
-        console.log('Overriding isGameEnded: no shapes revealed yet');
-        isGameEnded = false;
+        isGameEnded = true;
       }
-      
-      // If this is a new game (roundNumber === 1) and playCost * playerRemainingPlays
-      // is roughly equal to the potSize, it's likely a fresh game
-      if (isGameEnded && 
-          roundNumber === 1 && 
-          playerRemainingPlays > 0 && 
-          Math.abs(Number(ethers.formatEther(playCost)) * playerRemainingPlays - Number(ethers.formatEther(gameBalance))) < 0.001) {
-        console.log('Overriding isGameEnded: appears to be a fresh game');
-        isGameEnded = false;
-      }
-      
-      // The most critical case: when a fresh game starts with no previous rounds
-      // In this case, there's no real "game" to end yet - it's just starting
-      if (isGameEnded && 
-          (roundNumber === 0 || roundNumber === 1) && 
-          gameTimestamp > 0 && 
-          // Game just started recently (within 2x the commit duration)
-          (Math.floor(Date.now() / 1000) - gameTimestamp < Number(commitDuration) * 2)) {
-        console.log('Overriding isGameEnded: game just started');
-        isGameEnded = false;
-      }
-      
-      // For game #0 (which is essentially a non-existent game), never show as ended
-      if (isGameEnded && Number(currentGameNumber) === 0) {
-        console.log('Overriding isGameEnded: game #0 should never show as ended');
+      // Special case for game 0
+      else if (Number(currentGameNumber) === 0) {
         isGameEnded = false;
       }
       
@@ -315,8 +361,7 @@ export function useZigZagZog() {
         roundTimestamp,
         commitDuration: Number(commitDuration),
         revealDuration: Number(revealDuration),
-        rawContractGameEnded: gameEnded, // Raw value from contract
-        finalIsGameEnded: isGameEnded,   // Our computed value
+        isGameEnded,   // Our computed value
         playerRemainingPlays,
         hasCommitted,
         hasRevealed,
@@ -379,6 +424,9 @@ export function useZigZagZog() {
           squares: revealedSquares,
           triangles: revealedTriangles
         },
+        
+        // Previous round data
+        previousRoundShapes,
         
         error: null
       }));
@@ -959,26 +1007,40 @@ export function useZigZagZog() {
     // For periodic silent refreshes
     let refreshInterval: NodeJS.Timeout | null = null;
     
-    // Set up refresh at a reasonable interval
+    // Set up refresh at a reasonable interval - much less frequent to prevent flickering
     // Only if we have contract and connection
     if (contract && isConnected && isCorrectNetwork) {
-      // Check more frequently to detect game changes quickly
+      // Less frequent updates to avoid flicker
       refreshInterval = setInterval(async () => {
         if (isMounted) {
-          // In addition to full data refresh, we can also do a quick check just for game number changes
           try {
+            // Only check for game number changes, which is a lightweight call
             const currentGameNumber = await contract.currentGameNumber();
             if (Number(currentGameNumber) !== lastGameNumberRef.current) {
+              console.log(`Game number changed from ${lastGameNumberRef.current} to ${Number(currentGameNumber)}`);
               handleGameNumberChange(Number(currentGameNumber));
+            } else {
+              // Silent refresh - only do partial data refresh for critical game state
+              const [gameBalance, gameState] = await Promise.all([
+                contract.gameBalance(gameData.gameNumber),
+                contract.GameState(gameData.gameNumber),
+              ]);
+              
+              // Only update state if there's an actual change to reduce renders
+              const roundNumber = Number(gameState.roundNumber);
+              const roundTimestamp = Number(gameState.roundTimestamp);
+              if (roundNumber !== gameData.roundNumber || 
+                  roundTimestamp !== gameData.roundTimestamp ||
+                  Number(ethers.formatEther(gameBalance)) !== gameData.potSize) {
+                // Important game state changed - do a full refresh
+                fetchGameData();
+              }
             }
-            
-            // Full refresh to get all data
-            fetchGameData();
           } catch (error) {
-            console.error("Error checking game number:", error);
+            console.error("Error during background refresh:", error);
           }
         }
-      }, 10000); // 10 seconds delay
+      }, 2000); // 2 seconds delay - need more frequent updates for commit/reveal phases
     }
     
     // Cleanup function

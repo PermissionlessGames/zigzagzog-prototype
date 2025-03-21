@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@typechain/ethers-v6": "^0.5.1",
     "ethers": "^6.13.5",
     "next": "15.2.2",
     "react": "^19.0.0",

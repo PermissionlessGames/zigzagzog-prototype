@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import GameTimer from './GameTimer';
+import { PreviousRoundCard } from './PreviousRoundCard';
 
 interface GameStatsProps {
   gameNumber: number;
@@ -22,6 +23,14 @@ interface GameStatsProps {
     squares: number;
     triangles: number;
   };
+  
+  // Previous round data
+  previousRoundShapes?: {
+    circles: number;
+    squares: number;
+    triangles: number;
+    eliminationResult?: string;
+  };
 }
 
 export function GameStats({
@@ -34,10 +43,10 @@ export function GameStats({
   revealDuration,
   isGameEnded = false,
   commitCount = 0,
-  revealedShapes = { circles: 0, squares: 0, triangles: 0 }
+  revealedShapes = { circles: 0, squares: 0, triangles: 0 },
+  previousRoundShapes
 }: GameStatsProps) {
-  // Show placeholder values if data isn't loaded yet
-  const hasData = gameNumber > 0 || potSize > 0;
+  // Always show data, even during initial load - prevents flickering
   const [currentPhase, setCurrentPhase] = useState<'commit' | 'reveal' | 'nextRound'>('nextRound');
   
   // Update phase based on time, only on client-side to avoid hydration mismatch
@@ -74,13 +83,13 @@ export function GameStats({
   return (
     <div className="game-info">
       <div style={{ marginBottom: '1rem' }}>
-        <h2>Game #{hasData ? gameNumber : '...'}</h2>
+        <h2>Game #{gameNumber}</h2>
         <div>● ▲ ■ ◆</div>
       </div>
       
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <div><strong>Pot Size:</strong> {hasData ? formatNumber(potSize) + ' TG7T' : '...'}</div>
+          <div><strong>Pot Size:</strong> {formatNumber(potSize)} TG7T</div>
           
           {isGameEnded && (
             <div style={{
@@ -103,8 +112,16 @@ export function GameStats({
           </div>
         )}
         
+        {/* Show previous round results if we're past round 1 */}
+        {previousRoundShapes && roundNumber > 1 && (
+          <PreviousRoundCard 
+            roundNumber={roundNumber} 
+            shapes={previousRoundShapes} 
+          />
+        )}
+        
         {/* Show commit count during commit phase */}
-        {hasData && currentPhase === 'commit' && (
+        {currentPhase === 'commit' && (
           <div style={{ 
             marginTop: '1rem', 
             padding: '0.5rem', 
@@ -120,7 +137,7 @@ export function GameStats({
         )}
         
         {/* Show revealed shapes during reveal phase */}
-        {hasData && currentPhase === 'reveal' && (
+        {currentPhase === 'reveal' && (
           <div style={{ 
             marginTop: '1rem', 
             padding: '0.5rem', 
@@ -146,8 +163,8 @@ export function GameStats({
         )}
       </div>
       
-      {/* Game timer */}
-      {hasData && (commitDuration > 0 || revealDuration > 0) && (
+      {/* Game timer - always show */}
+      {(commitDuration > 0 || revealDuration > 0) && (
         <GameTimer 
           roundNumber={roundNumber}
           roundTimestamp={roundTimestamp}

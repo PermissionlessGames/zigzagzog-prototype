@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useMemo } from 'react';
 import { GameStats } from './GameStats';
 import { useWeb3 } from '@/contexts/Web3Context';
 import ShapeSelector from './ShapeSelector';
 import { GamePhase } from './GameTimer';
 import { ShapeSelection } from '@/hooks/useZigZagZog';
 
-// Play Quantity Selector component
-function PlayQuantitySelector({ 
+// Play Quantity Selector component - memoized to prevent unnecessary re-renders
+const PlayQuantitySelector = memo(({ 
   value, 
   onChange, 
   min = 1, 
@@ -18,7 +18,7 @@ function PlayQuantitySelector({
   onChange: (value: number) => void, 
   min?: number, 
   disabled?: boolean 
-}) {
+}) => {
   return (
     <div style={{ 
       display: 'flex', 
@@ -86,10 +86,10 @@ function PlayQuantitySelector({
       </div>
     </div>
   );
-}
+});
 
-// RevealPreview component to show what the player is about to reveal
-function RevealPreview({ gameNumber, roundNumber }: { gameNumber: number, roundNumber: number }) {
+// RevealPreview component to show what the player is about to reveal - memoized to prevent unnecessary re-renders
+const RevealPreview = memo(({ gameNumber, roundNumber }: { gameNumber: number, roundNumber: number }) => {
   const [commitment, setCommitment] = React.useState<{nonce: number, shapes: ShapeSelection} | null>(null);
   
   React.useEffect(() => {
@@ -140,7 +140,7 @@ function RevealPreview({ gameNumber, roundNumber }: { gameNumber: number, roundN
       </div>
     </div>
   );
-}
+});
 
 interface GameOverviewProps {
   gameNumber: number;
@@ -483,19 +483,7 @@ export function GameOverview({
           </div>
         ) : needsBuyIn ? (
           <div>
-            {willBuyingStartNewGame && (
-              <div style={{
-                padding: '0.5rem',
-                marginBottom: '1rem',
-                backgroundColor: '#f1f8e9',
-                border: '1px solid #4caf50',
-                borderRadius: '0.25rem',
-                color: '#4caf50',
-                fontWeight: 'bold'
-              }}>
-                Buying plays will start Game #{gameNumber + 1}!
-              </div>
-            )}
+            {/* Message about buying plays starting a new game removed */}
             <PlayQuantitySelector
               value={playQuantity}
               onChange={setPlayQuantity}
@@ -511,16 +499,15 @@ export function GameOverview({
                 padding: '0.6rem 1.2rem',
                 cursor: isProcessing ? 'not-allowed' : 'pointer',
                 opacity: isProcessing ? 0.7 : 1,
-                backgroundColor: willBuyingStartNewGame ? '#4caf50' : 'inherit',
-                color: willBuyingStartNewGame ? 'white' : 'inherit',
-                border: willBuyingStartNewGame ? 'none' : '1px solid #ccc'
+                backgroundColor: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.25rem'
               }}
             >
               {isProcessing 
                 ? 'Processing...' 
-                : willBuyingStartNewGame 
-                  ? `Start Game #${gameNumber + 1} - ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
-                  : `Buy ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
+                : `Buy ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
               }
             </button>
             <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
@@ -651,20 +638,7 @@ export function GameOverview({
             
             {/* Show buy more plays button for players with plays */}
             <div style={{ marginTop: '2rem' }}>
-              {willBuyingStartNewGame && (
-                <div style={{
-                  padding: '0.5rem',
-                  marginBottom: '1rem',
-                  backgroundColor: '#f1f8e9',
-                  border: '1px solid #4caf50',
-                  borderRadius: '0.25rem',
-                  color: '#4caf50',
-                  fontWeight: 'bold',
-                  fontSize: '0.9rem'
-                }}>
-                  Warning: Buying plays now will start Game #{gameNumber + 1}!
-                </div>
-              )}
+              {/* Warning about buying plays starting a new game removed */}
               <PlayQuantitySelector
                 value={playQuantity}
                 onChange={setPlayQuantity}
@@ -680,16 +654,15 @@ export function GameOverview({
                   padding: '0.5rem 1rem',
                   cursor: isProcessing ? 'not-allowed' : 'pointer',
                   opacity: isProcessing ? 0.7 : 1,
-                  backgroundColor: willBuyingStartNewGame ? '#4caf50' : 'inherit',
-                  color: willBuyingStartNewGame ? 'white' : 'inherit',
-                  border: willBuyingStartNewGame ? 'none' : '1px solid #ccc'
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.25rem'
                 }}
               >
                 {isProcessing 
                   ? 'Processing...' 
-                  : willBuyingStartNewGame 
-                    ? `Start Game #${gameNumber + 1} - ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
-                    : `Buy ${playQuantity} more plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
+                  : `Buy ${playQuantity} more plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
                 }
               </button>
               <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
