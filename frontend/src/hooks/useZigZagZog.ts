@@ -80,6 +80,9 @@ export function useZigZagZog() {
 
   // Store nonce for the current commitment
   const [currentNonce, setCurrentNonce] = useState<number>(0);
+  
+  // Store the target game number to view/interact with
+  const [targetGameNumber, setTargetGameNumber] = useState<number | null>(null);
 
   // Fetch game data from the contract
   const fetchGameData = async () => {
@@ -100,9 +103,14 @@ export function useZigZagZog() {
     try {
       // Just clear any existing errors
       setGameData(prev => ({ ...prev, error: null }));
-
-      // First get the current game number
-      const currentGameNumber = await contract.currentGameNumber();
+      
+      // First get the current contract game number
+      const currentContractGameNumber = await contract.currentGameNumber();
+      
+      // Determine which game to fetch data for
+      const currentGameNumber = targetGameNumber !== null ? 
+        targetGameNumber : 
+        Number(currentContractGameNumber);
       
       // Then get the rest of the data in parallel
       const [playCost, gameBalance, gameState, commitDuration, revealDuration, gameEnded] = await Promise.all([
@@ -987,6 +995,7 @@ export function useZigZagZog() {
     buyPlays,
     commitChoices,
     revealChoices,
-    refreshGameData: () => fetchGameData()
+    refreshGameData: () => fetchGameData(),
+    setTargetGameNumber
   };
 }

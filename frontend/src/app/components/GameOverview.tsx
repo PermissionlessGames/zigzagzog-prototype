@@ -176,6 +176,9 @@ interface GameOverviewProps {
   // Commit and reveal handlers
   onCommitChoices: (shapes: ShapeSelection) => Promise<any>;
   onRevealChoices: () => Promise<any>;
+  
+  // New property to handle spectator mode or past games
+  readOnly?: boolean;  // If true, user can only view but not interact
 }
 
 export function GameOverview({
@@ -197,7 +200,8 @@ export function GameOverview({
   commitCount = 0,
   revealedShapes = { circles: 0, squares: 0, triangles: 0 },
   onCommitChoices,
-  onRevealChoices
+  onRevealChoices,
+  readOnly = false
 }: GameOverviewProps) {
   const { isConnected, isCorrectNetwork, currencySymbol } = useWeb3();
   const [currentGamePhase, setCurrentGamePhase] = useState<GamePhase>('nextRound');
@@ -411,7 +415,18 @@ export function GameOverview({
       />
       
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-        {!isConnected ? (
+        {readOnly ? (
+          <div style={{
+            padding: '1rem',
+            marginBottom: '1rem',
+            backgroundColor: '#f9f9f9',
+            border: '1px solid #ddd',
+            borderRadius: '0.25rem',
+          }}>
+            <h3 style={{ margin: '0 0 0.5rem 0' }}>Spectator Mode</h3>
+            <p style={{ margin: 0 }}>You are viewing this game in read-only mode.</p>
+          </div>
+        ) : !isConnected ? (
           <p>Connect your wallet to play</p>
         ) : !isCorrectNetwork ? (
           <p>Switch to the correct network to play</p>
