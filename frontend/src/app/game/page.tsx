@@ -13,23 +13,23 @@ export default function GamePage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   
-  const handleBuyIn = async () => {
+  const handleBuyIn = async (quantity: number = 1) => {
     setIsBuying(true);
     
     try {
       // Get current game number before transaction
       const prevGameNumber = gameData.gameNumber;
       
-      const result = await buyPlays();
+      const result = await buyPlays(quantity);
       if (!result.success && result.error) {
         setToastMessage(`Transaction Error: ${result.error}`);
         setToastType('error');
       } else if (result.success) {
         if (result.startedNewGame) {
           // If we started a new game, show clear message
-          setToastMessage(`Successfully started Game #${prevGameNumber + 1}!`);
+          setToastMessage(`Successfully started Game #${prevGameNumber + 1} with ${quantity} plays!`);
         } else {
-          setToastMessage(`Successfully bought ${result.plays} plays!`);
+          setToastMessage(`Successfully bought ${quantity} plays!`);
         }
         setToastType('success');
       }

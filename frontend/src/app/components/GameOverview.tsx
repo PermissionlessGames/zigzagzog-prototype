@@ -7,6 +7,90 @@ import ShapeSelector from './ShapeSelector';
 import { GamePhase } from './GameTimer';
 import { ShapeSelection } from '@/hooks/useZigZagZog';
 
+// Play Quantity Selector component
+function PlayQuantitySelector({ 
+  value, 
+  onChange, 
+  min = 1, 
+  max = 10, 
+  disabled = false 
+}: { 
+  value: number, 
+  onChange: (value: number) => void, 
+  min?: number, 
+  max?: number, 
+  disabled?: boolean 
+}) {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      marginBottom: '1rem'
+    }}>
+      <label style={{ marginRight: '1rem', fontWeight: 'bold' }}>
+        Number of Plays:
+      </label>
+      <div style={{ 
+        display: 'flex',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        overflow: 'hidden'
+      }}>
+        <button 
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={disabled || value <= min}
+          style={{
+            padding: '0.5rem 0.8rem',
+            backgroundColor: disabled ? '#f0f0f0' : '#fff',
+            border: 'none',
+            borderRight: '1px solid #ccc',
+            cursor: disabled || value <= min ? 'not-allowed' : 'pointer',
+            opacity: disabled || value <= min ? 0.6 : 1
+          }}
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => {
+            const newValue = parseInt(e.target.value, 10);
+            if (!isNaN(newValue) && newValue >= min && newValue <= max) {
+              onChange(newValue);
+            }
+          }}
+          disabled={disabled}
+          style={{
+            width: '3rem',
+            border: 'none',
+            textAlign: 'center',
+            fontSize: '1rem',
+            padding: '0.5rem 0',
+            outline: 'none'
+          }}
+        />
+        <button 
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={disabled || value >= max}
+          style={{
+            padding: '0.5rem 0.8rem',
+            backgroundColor: disabled ? '#f0f0f0' : '#fff',
+            border: 'none',
+            borderLeft: '1px solid #ccc',
+            cursor: disabled || value >= max ? 'not-allowed' : 'pointer',
+            opacity: disabled || value >= max ? 0.6 : 1
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // RevealPreview component to show what the player is about to reveal
 function RevealPreview({ gameNumber, roundNumber }: { gameNumber: number, roundNumber: number }) {
   const [commitment, setCommitment] = React.useState<{nonce: number, shapes: ShapeSelection} | null>(null);
@@ -66,7 +150,7 @@ interface GameOverviewProps {
   potSize: number;
   lastGameMultiple?: number;  // Optional in case it's the first game
   buyInAmount: number;
-  onBuyIn: () => void;
+  onBuyIn: (quantity: number) => void;  // Updated to accept quantity
   isProcessing?: boolean;  // Added to show loading state
   
   // Timer related props
@@ -123,6 +207,7 @@ export function GameOverview({
   const [isCommitting, setIsCommitting] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [now, setNow] = useState(0);
+  const [playQuantity, setPlayQuantity] = useState<number>(1);
   
   // Helper variables for timing
   const commitEndTime = roundTimestamp + commitDuration;
@@ -357,8 +442,16 @@ export function GameOverview({
                 Buy plays to start a new game.
               </div>
             </div>
+            <PlayQuantitySelector
+              value={playQuantity}
+              onChange={setPlayQuantity}
+              disabled={isProcessing}
+              min={1}
+              max={20}
+            />
+            
             <button 
-              onClick={onBuyIn}
+              onClick={() => onBuyIn(playQuantity)}
               disabled={isProcessing}
               style={{ 
                 fontSize: '1.1rem', 
@@ -371,7 +464,7 @@ export function GameOverview({
                 borderRadius: '0.25rem'
               }}
             >
-              {isProcessing ? 'Processing...' : `Start New Game (${buyInAmount} ${currencySymbol} / play)`}
+              {isProcessing ? 'Processing...' : `Start New Game - ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`}
             </button>
             <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
               When you buy plays, a new game will automatically start.
@@ -392,8 +485,16 @@ export function GameOverview({
                 Buying plays will start Game #{gameNumber + 1}!
               </div>
             )}
+            <PlayQuantitySelector
+              value={playQuantity}
+              onChange={setPlayQuantity}
+              disabled={isProcessing}
+              min={1}
+              max={20}
+            />
+            
             <button 
-              onClick={onBuyIn}
+              onClick={() => onBuyIn(playQuantity)}
               disabled={isProcessing}
               style={{ 
                 fontSize: '1.1rem', 
@@ -408,12 +509,12 @@ export function GameOverview({
               {isProcessing 
                 ? 'Processing...' 
                 : willBuyingStartNewGame 
-                  ? `Start Game #${gameNumber + 1} (${buyInAmount} ${currencySymbol} / play)`
-                  : `Buy plays: ${buyInAmount} ${currencySymbol} / play`
+                  ? `Start Game #${gameNumber + 1} - ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
+                  : `Buy ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
               }
             </button>
             <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
-              You can buy multiple plays by sending more ETH. The amount will be calculated automatically.
+              Select the number of plays you want to purchase.
             </div>
           </div>
         ) : (
@@ -554,8 +655,16 @@ export function GameOverview({
                   Warning: Buying plays now will start Game #{gameNumber + 1}!
                 </div>
               )}
+              <PlayQuantitySelector
+                value={playQuantity}
+                onChange={setPlayQuantity}
+                disabled={isProcessing}
+                min={1}
+                max={20}
+              />
+              
               <button 
-                onClick={onBuyIn}
+                onClick={() => onBuyIn(playQuantity)}
                 disabled={isProcessing}
                 style={{ 
                   fontSize: '1rem', 
@@ -570,8 +679,8 @@ export function GameOverview({
                 {isProcessing 
                   ? 'Processing...' 
                   : willBuyingStartNewGame 
-                    ? `Start Game #${gameNumber + 1} (${buyInAmount} ${currencySymbol} / play)`
-                    : `Buy more plays: ${buyInAmount} ${currencySymbol} / play`
+                    ? `Start Game #${gameNumber + 1} - ${playQuantity} plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
+                    : `Buy ${playQuantity} more plays (${(buyInAmount * playQuantity).toFixed(4)} ${currencySymbol})`
                 }
               </button>
               <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
