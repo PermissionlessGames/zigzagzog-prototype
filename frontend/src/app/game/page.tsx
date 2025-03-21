@@ -17,12 +17,20 @@ export default function GamePage() {
     setIsBuying(true);
     
     try {
+      // Get current game number before transaction
+      const prevGameNumber = gameData.gameNumber;
+      
       const result = await buyPlays();
       if (!result.success && result.error) {
         setToastMessage(`Transaction Error: ${result.error}`);
         setToastType('error');
       } else if (result.success) {
-        setToastMessage('Successfully bought plays!');
+        if (result.startedNewGame) {
+          // If we started a new game, show clear message
+          setToastMessage(`Successfully started Game #${prevGameNumber + 1}!`);
+        } else {
+          setToastMessage(`Successfully bought ${result.plays} plays!`);
+        }
         setToastType('success');
       }
     } catch (error) {
@@ -79,13 +87,25 @@ export default function GamePage() {
     }
   };
 
-  // Show toast for contract errors
+  // Keep track of the last game number to detect game transitions
+  const lastGameNumberRef = React.useRef<number>(0);
+  
+  // Show toast for contract errors and game number changes
   useEffect(() => {
     if (gameData.error) {
       setToastMessage(`Error: ${gameData.error}`);
       setToastType('error');
     }
-  }, [gameData.error]);
+    
+    // Check if game number has changed - this means a new game started
+    if (lastGameNumberRef.current > 0 && gameData.gameNumber > lastGameNumberRef.current) {
+      setToastMessage(`A new game (#${gameData.gameNumber}) has started! Buy plays to join.`);
+      setToastType('info');
+    }
+    
+    // Update reference
+    lastGameNumberRef.current = gameData.gameNumber;
+  }, [gameData.error, gameData.gameNumber]);
 
   // Close toast handler
   const handleCloseToast = () => {

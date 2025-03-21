@@ -368,6 +368,14 @@ export function useZigZagZog() {
       // Refresh data after successful transaction
       await fetchGameData();
       
+      // If we just started a new game, explicitly update isGameEnded to false
+      if (willStartNewGame) {
+        setGameData(prev => ({
+          ...prev,
+          isGameEnded: false // Reset game ended status for the new game
+        }));
+      }
+      
       return { 
         success: true, 
         plays: quantity, 
@@ -685,12 +693,41 @@ export function useZigZagZog() {
   };
 
   // Load data on initial render and when contract/connection state changes
+  // Keep track of the last game number to detect game transitions
+  const lastGameNumberRef = useRef<number>(0);
+  
+  // Handler for game number changes (when a new game starts)
+  const handleGameNumberChange = (newGameNumber: number) => {
+    if (lastGameNumberRef.current > 0 && newGameNumber > lastGameNumberRef.current) {
+      console.log(`Game number changed from ${lastGameNumberRef.current} to ${newGameNumber}`);
+      
+      // A new game has started, possibly initiated by another player
+      // Reset relevant game state explicitly
+      setGameData(prev => ({
+        ...prev,
+        isGameEnded: false, // Reset game ended status for the new game
+        hasCommitted: false, // Reset commitment status
+        hasRevealed: false, // Reset reveal status
+        playerRemainingPlays: 0, // Reset plays until we check if player has any
+        roundNumber: 1, // New games start at round 1
+      }));
+    }
+    
+    // Update the reference
+    lastGameNumberRef.current = newGameNumber;
+  };
+  
   useEffect(() => {
     // Reset initial load flag when dependencies change
     isInitialLoadRef.current = true;
     
     // Initial data load
-    fetchGameData();
+    fetchGameData().then(() => {
+      // After initial load, set the last game number reference
+      if (gameData.gameNumber > 0) {
+        lastGameNumberRef.current = gameData.gameNumber;
+      }
+    });
     
     // Track if the component is mounted
     let isMounted = true;
@@ -701,11 +738,23 @@ export function useZigZagZog() {
     // Set up refresh at a reasonable interval
     // Only if we have contract and connection
     if (contract && isConnected && isCorrectNetwork) {
-      refreshInterval = setInterval(() => {
+      // Check more frequently to detect game changes quickly
+      refreshInterval = setInterval(async () => {
         if (isMounted) {
-          fetchGameData();
+          // In addition to full data refresh, we can also do a quick check just for game number changes
+          try {
+            const currentGameNumber = await contract.currentGameNumber();
+            if (Number(currentGameNumber) !== lastGameNumberRef.current) {
+              handleGameNumberChange(Number(currentGameNumber));
+            }
+            
+            // Full refresh to get all data
+            fetchGameData();
+          } catch (error) {
+            console.error("Error checking game number:", error);
+          }
         }
-      }, 15000); // 15 seconds delay
+      }, 10000); // 10 seconds delay
     }
     
     // Cleanup function
