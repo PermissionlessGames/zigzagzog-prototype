@@ -90,6 +90,12 @@ export function useZigZagZog() {
       }));
       return;
     }
+    
+    // Default to unended game state initially
+    setGameData(prev => ({
+      ...prev,
+      isGameEnded: false
+    }));
 
     try {
       // Just clear any existing errors
@@ -247,10 +253,53 @@ export function useZigZagZog() {
         }
       }
       
-      // Use the contract's hasGameEnded function to determine if the game has ended
-      // This is much more reliable than inferring from errors or other state
-      const isGameEnded = gameEnded;
+      // Use the contract's hasGameEnded function but with additional checks
+      // The contract's hasGameEnded function has an issue where it returns true
+      // when eliminationResult is NothingEliminated (all shapes have equal count)
+      // We need to add extra checks to determine if the game has truly ended
       
+      let isGameEnded = gameEnded;
+      
+      // Additional sanity checks to prevent showing "Game Ended" incorrectly
+      // If there are no reveals yet (all counts are 0), the game can't have ended
+      if (isGameEnded && 
+          roundNumber > 0 && 
+          revealedCircles === 0 && 
+          revealedSquares === 0 && 
+          revealedTriangles === 0) {
+        // Game can't have ended if nothing has been revealed yet
+        console.log('Overriding isGameEnded: no shapes revealed yet');
+        isGameEnded = false;
+      }
+      
+      // If this is a new game (roundNumber === 1) and playCost * playerRemainingPlays
+      // is roughly equal to the potSize, it's likely a fresh game
+      if (isGameEnded && 
+          roundNumber === 1 && 
+          playerRemainingPlays > 0 && 
+          Math.abs(Number(ethers.formatEther(playCost)) * playerRemainingPlays - Number(ethers.formatEther(gameBalance))) < 0.001) {
+        console.log('Overriding isGameEnded: appears to be a fresh game');
+        isGameEnded = false;
+      }
+      
+      // The most critical case: when a fresh game starts with no previous rounds
+      // In this case, there's no real "game" to end yet - it's just starting
+      if (isGameEnded && 
+          (roundNumber === 0 || roundNumber === 1) && 
+          gameTimestamp > 0 && 
+          // Game just started recently (within 2x the commit duration)
+          (Math.floor(Date.now() / 1000) - gameTimestamp < Number(commitDuration) * 2)) {
+        console.log('Overriding isGameEnded: game just started');
+        isGameEnded = false;
+      }
+      
+      // For game #0 (which is essentially a non-existent game), never show as ended
+      if (isGameEnded && Number(currentGameNumber) === 0) {
+        console.log('Overriding isGameEnded: game #0 should never show as ended');
+        isGameEnded = false;
+      }
+      
+      // Log detailed game status for debugging
       console.log('Game status check:', {
         currentGameNumber,
         roundNumber,
@@ -258,10 +307,18 @@ export function useZigZagZog() {
         roundTimestamp,
         commitDuration: Number(commitDuration),
         revealDuration: Number(revealDuration),
-        isGameEnded,
-        circlesRevealed: revealedCircles,
-        squaresRevealed: revealedSquares,
-        trianglesRevealed: revealedTriangles
+        rawContractGameEnded: gameEnded, // Raw value from contract
+        finalIsGameEnded: isGameEnded,   // Our computed value
+        playerRemainingPlays,
+        hasCommitted,
+        hasRevealed,
+        playerShapeData: {
+          circles: revealedCircles,
+          squares: revealedSquares,
+          triangles: revealedTriangles
+        },
+        potSize: Number(ethers.formatEther(gameBalance)),
+        playCostInEth: Number(ethers.formatEther(playCost))
       });
 
       // Mark initial load as complete
