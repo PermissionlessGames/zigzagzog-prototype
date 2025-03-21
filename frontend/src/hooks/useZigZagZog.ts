@@ -220,7 +220,7 @@ export function useZigZagZog() {
       let hasRevealed = false;
       let playerRemainingPlays = 0;
       
-      // Fetch revealed shapes
+      // Fetch revealed shapes and commit counts
       let commitCount = 0;
       let revealedCircles = 0;
       let revealedSquares = 0;
@@ -231,7 +231,6 @@ export function useZigZagZog() {
         if (roundNumber > 0) {
           try {
             // Get the revealed shape player counts from the contract
-            // These are separate from commitments - only players who revealed in the reveal phase
             const [circlePlayerCount, squarePlayerCount, trianglePlayerCount] = await Promise.all([
               contract.circlePlayerCount(currentGameNumber, roundNumber), 
               contract.squarePlayerCount(currentGameNumber, roundNumber),
@@ -243,28 +242,83 @@ export function useZigZagZog() {
             revealedSquares = Number(squarePlayerCount);
             revealedTriangles = Number(trianglePlayerCount);
             
-            // Set a fixed commit count that won't flicker
-            // The contract doesn't track the total number of commits directly
-            // To avoid flickering, we'll set a conservative estimate based on the reveal counts
-            if (hasCommitted) {
-              // If the player has committed, we know at least 1 player committed
-              commitCount = 1;
-            }
+            // Query the PlayerCommitment events for this game/round to accurately count commits
+            // This is the proper source of truth for commitments
+            const filter = contract.filters.PlayerCommitment(null, currentGameNumber, roundNumber);
+            const commitEvents = await contract.queryFilter(filter);
             
-            // If there are players who have revealed, use that as a minimum for commit count
+            // Each unique address in the events represents a player who committed
+            const committedAddresses = new Set();
+            commitEvents.forEach(event => {
+              if (event.args && event.args.playerAddress) {
+                committedAddresses.add(event.args.playerAddress);
+              }
+            });
+            
+            // The size of the set is the count of unique players who committed
+            commitCount = committedAddresses.size;
+            
+            // If there are players who have revealed, make sure the commit count is at least that high
             // (since players must commit before they can reveal)
-            const revealedPlayerCount = Math.max(revealedCircles, revealedSquares, revealedTriangles);
-            if (revealedPlayerCount > commitCount) {
-              commitCount = revealedPlayerCount;
+            const distinctRevealedPlayers = new Set([
+              ...(revealedCircles > 0 ? [1] : []),
+              ...(revealedSquares > 0 ? [1] : []),
+              ...(revealedTriangles > 0 ? [1] : [])
+            ]).size;
+            
+            const totalRevealedPlayers = revealedCircles + revealedSquares + revealedTriangles;
+            if (totalRevealedPlayers > commitCount) {
+              // Contract guarantees more commitments than reveals
+              commitCount = totalRevealedPlayers;
             }
             
           } catch (error) {
             console.error("Error fetching game statistics:", error);
-            // Fallback to default values if contract call fails
+            // Fallback to source of truth - query player commits if direct event query failed
+            try {
+              // As a fallback, we'll try to get the playerHasCommitted mapping for a sample of addresses
+              // This is less efficient, but may work if event querying has issues
+              const playerCommitsPromises = [];
+              // Try to get recent transaction senders as a sample of potential players
+              const blockNumber = await contract.provider.getBlockNumber();
+              const recentBlock = await contract.provider.getBlock(blockNumber);
+              
+              if (recentBlock && recentBlock.transactions) {
+                // Get unique transaction senders from recent block
+                const txSenders = new Set();
+                for (let i = 0; i < Math.min(20, recentBlock.transactions.length); i++) {
+                  const tx = await contract.provider.getTransaction(recentBlock.transactions[i]);
+                  if (tx && tx.from) {
+                    txSenders.add(tx.from);
+                  }
+                }
+                
+                // Query if these addresses have committed to the current game/round
+                for (const addr of txSenders) {
+                  playerCommitsPromises.push(
+                    contract.playerHasCommitted(currentGameNumber, roundNumber, addr)
+                  );
+                }
+                
+                // Count how many have committed
+                const commitResults = await Promise.all(playerCommitsPromises);
+                const additionalCommitCount = commitResults.filter(Boolean).length;
+                
+                // Add any additional commits found to our count
+                if (additionalCommitCount > 0) {
+                  commitCount += additionalCommitCount;
+                }
+              }
+            } catch (innerError) {
+              console.error("Error in commit count fallback:", innerError);
+              // If all else fails, use a simple fallback based on current player state
+              commitCount = hasCommitted ? 1 : 0;
+            }
+            
+            // Fallback for revealed counts if those failed too
             revealedCircles = 0;
             revealedSquares = 0;
             revealedTriangles = 0;
-            commitCount = hasCommitted ? 1 : 0;
           }
         }
       } catch (error) {
@@ -289,10 +343,8 @@ export function useZigZagZog() {
           hasRevealed = revealedResult;
           playerRemainingPlays = Number(playsResult);
           
-          // If the player has committed, increment commit count
-          if (hasCommitted) {
-            commitCount = Math.max(1, commitCount);
-          }
+          // Note: We don't need to increment commit count here since we're already
+          // getting the accurate commit count from the contract events
         } catch (error) {
           console.error("Error fetching player data:", error);
         }
@@ -407,32 +459,53 @@ export function useZigZagZog() {
     }
   };
 
-  // Check if buying plays will start a new game based on current time and game state
-  // No longer using an async call to avoid potential errors
-  const checkIfBuyingWillStartNewGame = () => {
-    if (!gameData) {
+  // Check if buying plays will start a new game based on contract logic
+  const checkIfBuyingWillStartNewGame = async () => {
+    if (!contract || !gameData) {
       return false;
     }
     
-    // Use the contract's logic directly:
-    // A new game starts when:
-    // 1. Current time > gameTimestamp + commitDuration, OR
-    // 2. currentGameNumber == 0
-    const now = Math.floor(Date.now() / 1000);
-    const startNewGame = now > gameData.gameTimestamp + gameData.commitDuration || 
-                         gameData.gameNumber === 0;
-                         
-    console.log('Will buying start new game check:', {
-      currentGameNumber: gameData.gameNumber,
-      now,
-      gameTimestamp: gameData.gameTimestamp,
-      commitDuration: gameData.commitDuration,
-      threshold: gameData.gameTimestamp + gameData.commitDuration,
-      isPastThreshold: now > gameData.gameTimestamp + gameData.commitDuration,
-      startNewGame
-    });
-    
-    return startNewGame;
+    try {
+      // Use the contract's actual condition by simulating the check from the buyPlays function:
+      // From contract line 87-93:
+      //   if (block.timestamp > GameState[currentGameNumber].gameTimestamp + commitDuration || currentGameNumber == 0) {
+      //     currentGameNumber++;
+      //     ...
+      //   }
+      const [currentContractGameNumber, gameState, commitDuration] = await Promise.all([
+        contract.currentGameNumber(),
+        contract.GameState(await contract.currentGameNumber()),
+        contract.commitDuration()
+      ]);
+      
+      // Get the current block timestamp from the provider
+      const latestBlock = await contract.provider.getBlock('latest');
+      const blockTimestamp = latestBlock ? latestBlock.timestamp : Math.floor(Date.now() / 1000);
+      
+      // Apply the exact contract logic
+      const gameTimestamp = Number(gameState.gameTimestamp);
+      const willStartNewGame = 
+        blockTimestamp > gameTimestamp + Number(commitDuration) || 
+        Number(currentContractGameNumber) === 0;
+      
+      console.log('Will buying start new game (source of truth):', {
+        currentGameNumber: Number(currentContractGameNumber),
+        blockTimestamp,
+        gameTimestamp,
+        commitDuration: Number(commitDuration),
+        threshold: gameTimestamp + Number(commitDuration),
+        isPastThreshold: blockTimestamp > gameTimestamp + Number(commitDuration),
+        willStartNewGame
+      });
+      
+      return willStartNewGame;
+    } catch (error) {
+      console.error("Error checking if buying will start new game:", error);
+      
+      // Fallback to client-side calculation if contract call fails
+      const now = Math.floor(Date.now() / 1000);
+      return now > gameData.gameTimestamp + gameData.commitDuration || gameData.gameNumber === 0;
+    }
   };
 
   // Handle buying plays
@@ -442,10 +515,10 @@ export function useZigZagZog() {
     }
 
     try {
-      // Check if buying plays will start a new game - synchronously
-      const willStartNewGame = checkIfBuyingWillStartNewGame();
+      // Check if buying plays will start a new game - using contract as source of truth
+      const willStartNewGame = await checkIfBuyingWillStartNewGame();
       
-      // Update the state with this info
+      // Update the state with this info from source of truth
       setGameData(prev => ({
         ...prev,
         willBuyingStartNewGame: willStartNewGame
