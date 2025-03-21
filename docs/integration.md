@@ -16,6 +16,7 @@ Flows:
 3. Committing Choices
 4. Revealing Choices
 5. Game Progression and Elimination
+6. Game End Detection
 
 ## Game Structure
 
@@ -177,9 +178,47 @@ function squaredRevealed(uint256 gameNumber, uint256 roundNumber) external view 
 function trianglesRevealed(uint256 gameNumber, uint256 roundNumber) external view returns (uint256);
 ```
 
+The contract also tracks the number of players that revealed each shape and the last player to reveal each shape:
+```solidity
+function circlePlayerCount(uint256 gameNumber, uint256 roundNumber) external view returns (uint256);
+function squarePlayerCount(uint256 gameNumber, uint256 roundNumber) external view returns (uint256);
+function trianglePlayerCount(uint256 gameNumber, uint256 roundNumber) external view returns (uint256);
+
+function lastCircleRevealed(uint256 gameNumber, uint256 roundNumber) external view returns (address);
+function lastSquareRevealed(uint256 gameNumber, uint256 roundNumber) external view returns (address);
+function lastTriangleRevealed(uint256 gameNumber, uint256 roundNumber) external view returns (address);
+```
+
 And for individual players:
 ```solidity
 function playerCirclesRevealed(uint256 gameNumber, uint256 roundNumber, address player) external view returns (uint256);
 function playerSquaresRevealed(uint256 gameNumber, uint256 roundNumber, address player) external view returns (uint256);
 function playerTrianglesRevealed(uint256 gameNumber, uint256 roundNumber, address player) external view returns (uint256);
-``` 
+```
+
+## Game End Detection
+
+To determine whether a game has ended, you can use the `hasGameEnded` function:
+
+```solidity
+function hasGameEnded(uint256 gameNumber) external view returns (bool);
+```
+
+This function checks the current state of the game and determines if it has ended based on the following conditions:
+
+1. After calculating the elimination result for the current round:
+   - If all three shapes have the same count, the game ends with no elimination
+   - If one shape is eliminated, it checks the number of remaining players with surviving shapes
+
+2. For the remaining shapes after elimination:
+   - If only one player has surviving plays, the game has ended
+   - If there are exactly two players remaining, the game checks if it's actually the same player (by comparing the last player to reveal each shape)
+   - If there are more than two players with different shapes, the game continues
+
+The game will return `true` when any of these end conditions are met:
+
+- When one elimination type has occurred and only one player remains
+- When one elimination type has occurred and two players remain, but it's the same player for both shapes
+- When no elimination occurred (all three shapes have equal count)
+
+This function is useful for client applications to determine when to show game end screens, calculate final standings, or prompt users to claim winnings. 
