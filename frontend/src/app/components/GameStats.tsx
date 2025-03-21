@@ -12,6 +12,9 @@ interface GameStatsProps {
   commitDuration: number;
   revealDuration: number;
   
+  // Game status
+  isGameEnded?: boolean;
+  
   // Game statistics
   commitCount?: number;  // Number of players who have committed in current round
   revealedShapes?: {
@@ -29,6 +32,7 @@ export function GameStats({
   roundTimestamp,
   commitDuration,
   revealDuration,
+  isGameEnded = false,
   commitCount = 0,
   revealedShapes = { circles: 0, squares: 0, triangles: 0 }
 }: GameStatsProps) {
@@ -77,6 +81,20 @@ export function GameStats({
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
           <div><strong>Pot Size:</strong> {hasData ? formatNumber(potSize) + ' TG7T' : '...'}</div>
+          
+          {isGameEnded && (
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '0.3rem 0.5rem',
+              backgroundColor: '#d32f2f',
+              color: 'white',
+              borderRadius: '4px',
+              fontSize: '0.9rem',
+              fontWeight: 'bold'
+            }}>
+              Game Ended
+            </div>
+          )}
         </div>
         
         {lastGameMultiple && (

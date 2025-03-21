@@ -99,12 +99,13 @@ export function useZigZagZog() {
       const currentGameNumber = await contract.currentGameNumber();
       
       // Then get the rest of the data in parallel
-      const [playCost, gameBalance, gameState, commitDuration, revealDuration] = await Promise.all([
+      const [playCost, gameBalance, gameState, commitDuration, revealDuration, gameEnded] = await Promise.all([
         contract.playCost(),
         contract.gameBalance(currentGameNumber),
         contract.GameState(currentGameNumber),
         contract.commitDuration(),
-        contract.revealDuration()
+        contract.revealDuration(),
+        contract.hasGameEnded(currentGameNumber)
       ]);
       
       // Extract values from gameState
@@ -228,15 +229,9 @@ export function useZigZagZog() {
         }
       }
       
-      // The game can end for two reasons (from the contract):
-      // 1. Total surviving plays ≤ 2, or
-      // 2. All surviving plays belong to a single player
-      // Since we can't directly query this state, we'll infer it from contract errors
-      // or player state during commitment phases
-      
-      // For simplicity, we'll set isGameEnded to false initially
-      // It will be set to true when we encounter specific errors
-      const isGameEnded = false; 
+      // Use the contract's hasGameEnded function to determine if the game has ended
+      // This is much more reliable than inferring from errors or other state
+      const isGameEnded = gameEnded;
       
       console.log('Game status check:', {
         currentGameNumber,
@@ -244,7 +239,11 @@ export function useZigZagZog() {
         gameTimestamp,
         roundTimestamp,
         commitDuration: Number(commitDuration),
-        revealDuration: Number(revealDuration)
+        revealDuration: Number(revealDuration),
+        isGameEnded,
+        circlesRevealed: revealedCircles,
+        squaresRevealed: revealedSquares,
+        trianglesRevealed: revealedTriangles
       });
 
       // Mark initial load as complete

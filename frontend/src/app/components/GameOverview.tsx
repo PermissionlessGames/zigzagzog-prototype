@@ -272,7 +272,14 @@ export function GameOverview({
       }}>
         <div><strong>Debug Info</strong></div>
         <div>Game #: {gameNumber}</div>
-        <div>Game Ended: {isGameEnded.toString()}</div>
+        <div style={{ 
+          color: isGameEnded ? '#d32f2f' : 'inherit', 
+          fontWeight: isGameEnded ? 'bold' : 'normal',
+          backgroundColor: isGameEnded ? '#ffebee' : 'inherit',
+          padding: isGameEnded ? '2px 4px' : '0'
+        }}>
+          Game Ended: {isGameEnded.toString()} (via hasGameEnded contract call)
+        </div>
         <div style={{ color: willBuyingStartNewGame ? '#28a745' : 'inherit', fontWeight: willBuyingStartNewGame ? 'bold' : 'normal' }}>
           Buy → New Game: {willBuyingStartNewGame.toString()}
         </div>
@@ -300,6 +307,12 @@ export function GameOverview({
         <div>Player Plays: {playerRemainingPlays}</div>
         <div>Has Committed: {hasCommitted.toString()}</div>
         <div>Has Revealed: {hasRevealed.toString()}</div>
+        <div style={{ marginTop: '4px' }}>
+          <strong>Game Statistics:</strong>
+        </div>
+        <div>Circle Count: {revealedShapes.circles}</div>
+        <div>Square Count: {revealedShapes.squares}</div>
+        <div>Triangle Count: {revealedShapes.triangles}</div>
       </div>
       
       <GameStats
@@ -310,6 +323,7 @@ export function GameOverview({
         roundTimestamp={roundTimestamp}
         commitDuration={commitDuration}
         revealDuration={revealDuration}
+        isGameEnded={isGameEnded}
         commitCount={commitCount}
         revealedShapes={revealedShapes}
       />
@@ -334,9 +348,10 @@ export function GameOverview({
                 Game #{gameNumber} has ended!
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#333' }}>
-                According to the contract, games end when:<br />
-                1. Total surviving plays ≤ 2, or<br />
-                2. All surviving plays belong to a single player
+                A game can end in several ways:<br />
+                1. When only one player remains with surviving shapes<br />
+                2. When only one shape type is left, but the same player has all shapes<br />
+                3. When all three shapes have the same count (stalemate)
               </div>
               <div style={{ marginTop: '0.5rem' }}>
                 Buy plays to start a new game.
