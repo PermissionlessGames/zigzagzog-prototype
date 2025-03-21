@@ -30,17 +30,25 @@ export interface ZigZagZogAbiInterface extends Interface {
       | "ZigZagZogVersion"
       | "buyPlays"
       | "choicesHash"
+      | "circlePlayerCount"
+      | "claimWinnings"
       | "commitChoices"
       | "commitDuration"
       | "currentGameNumber"
       | "eip712Domain"
       | "gameBalance"
+      | "hasGameEnded"
+      | "lastCircleRevealed"
+      | "lastSquareRevealed"
+      | "lastTriangleRevealed"
       | "playCost"
       | "playerHasCommitted"
       | "playerHasRevealed"
       | "purchasedPlays"
       | "revealChoices"
       | "revealDuration"
+      | "squarePlayerCount"
+      | "trianglePlayerCount"
   ): FunctionFragment;
 
   getEvent(
@@ -68,6 +76,14 @@ export interface ZigZagZogAbiInterface extends Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "circlePlayerCount",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claimWinnings",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "commitChoices",
     values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
@@ -86,6 +102,22 @@ export interface ZigZagZogAbiInterface extends Interface {
   encodeFunctionData(
     functionFragment: "gameBalance",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasGameEnded",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lastCircleRevealed",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lastSquareRevealed",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lastTriangleRevealed",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "playCost", values?: undefined): string;
   encodeFunctionData(
@@ -115,6 +147,14 @@ export interface ZigZagZogAbiInterface extends Interface {
     functionFragment: "revealDuration",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "squarePlayerCount",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "trianglePlayerCount",
+    values: [BigNumberish, BigNumberish]
+  ): string;
 
   decodeFunctionResult(functionFragment: "GameState", data: BytesLike): Result;
   decodeFunctionResult(
@@ -124,6 +164,14 @@ export interface ZigZagZogAbiInterface extends Interface {
   decodeFunctionResult(functionFragment: "buyPlays", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "choicesHash",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "circlePlayerCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "claimWinnings",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -146,6 +194,22 @@ export interface ZigZagZogAbiInterface extends Interface {
     functionFragment: "gameBalance",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "hasGameEnded",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "lastCircleRevealed",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "lastSquareRevealed",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "lastTriangleRevealed",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "playCost", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "playerHasCommitted",
@@ -165,6 +229,14 @@ export interface ZigZagZogAbiInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "revealDuration",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "squarePlayerCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "trianglePlayerCount",
     data: BytesLike
   ): Result;
 }
@@ -273,6 +345,18 @@ export interface ZigZagZogAbi extends BaseContract {
     "view"
   >;
 
+  circlePlayerCount: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
+  claimWinnings: TypedContractMethod<
+    [gameNumber: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   commitChoices: TypedContractMethod<
     [gameNumber: BigNumberish, roundNumber: BigNumberish, signature: BytesLike],
     [void],
@@ -300,6 +384,30 @@ export interface ZigZagZogAbi extends BaseContract {
   >;
 
   gameBalance: TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+
+  hasGameEnded: TypedContractMethod<
+    [gameNumber: BigNumberish],
+    [boolean],
+    "view"
+  >;
+
+  lastCircleRevealed: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+
+  lastSquareRevealed: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+
+  lastTriangleRevealed: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
 
   playCost: TypedContractMethod<[], [bigint], "view">;
 
@@ -335,6 +443,18 @@ export interface ZigZagZogAbi extends BaseContract {
   >;
 
   revealDuration: TypedContractMethod<[], [bigint], "view">;
+
+  squarePlayerCount: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
+  trianglePlayerCount: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -374,6 +494,16 @@ export interface ZigZagZogAbi extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "circlePlayerCount"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "claimWinnings"
+  ): TypedContractMethod<[gameNumber: BigNumberish], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "commitChoices"
   ): TypedContractMethod<
     [gameNumber: BigNumberish, roundNumber: BigNumberish, signature: BytesLike],
@@ -406,6 +536,30 @@ export interface ZigZagZogAbi extends BaseContract {
   getFunction(
     nameOrSignature: "gameBalance"
   ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "hasGameEnded"
+  ): TypedContractMethod<[gameNumber: BigNumberish], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "lastCircleRevealed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "lastSquareRevealed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "lastTriangleRevealed"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "playCost"
   ): TypedContractMethod<[], [bigint], "view">;
@@ -447,6 +601,20 @@ export interface ZigZagZogAbi extends BaseContract {
   getFunction(
     nameOrSignature: "revealDuration"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "squarePlayerCount"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "trianglePlayerCount"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
 
   getEvent(
     key: "EIP712DomainChanged"
