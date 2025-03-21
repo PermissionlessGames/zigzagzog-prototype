@@ -56,6 +56,18 @@ contract ZigZagZog is EIP712 {
     mapping(uint256 => mapping(uint256 => mapping(address => uint256))) playerSquaresRevealed;
     // Game number => round number => player address => # of triangles revealed by player
     mapping(uint256 => mapping(uint256 => mapping(address => uint256))) playerTrianglesRevealed;
+    // Game number => round number => # of accounts revealing a circle
+    mapping(uint256 => mapping(uint256 => uint256)) public circlePlayerCount;
+    // Game number => round number => # of accounts revealing a square
+    mapping(uint256 => mapping(uint256 => uint256)) public squarePlayerCount;
+    // Game number => round number => # of accounts revealing a triangle
+    mapping(uint256 => mapping(uint256 => uint256)) public trianglePlayerCount;
+    // Game number => round number => account revealing last circle
+    mapping(uint256 => mapping(uint256 => address)) public lastCircleRevealed;
+    // Game number => round number => account revealing last square
+    mapping(uint256 => mapping(uint256 => address)) public lastSquareRevealed;
+    // Game number => round number => account revealing last triangle
+    mapping(uint256 => mapping(uint256 => address)) public lastTriangleRevealed;
 
     uint256 public currentGameNumber = 0;
 
@@ -148,21 +160,17 @@ contract ZigZagZog is EIP712 {
                 trianglesRevealed[gameNumber][previousRound]
             );
 
+            _updateSurvivingPlays(gameNumber, roundNumber, elimResult);
+
             if (elimResult == EliminationResult.CircleEliminated) {
                 playerSurvivingPlays[gameNumber][msg.sender] = playerSquaresRevealed[gameNumber][previousRound][msg
                     .sender] + playerTrianglesRevealed[gameNumber][previousRound][msg.sender];
-                survivingPlays[gameNumber] =
-                    squaredRevealed[gameNumber][previousRound] + trianglesRevealed[gameNumber][previousRound];
             } else if (elimResult == EliminationResult.SquareEliminated) {
                 playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][previousRound][msg
                     .sender] + playerTrianglesRevealed[gameNumber][previousRound][msg.sender];
-                survivingPlays[gameNumber] =
-                    circlesRevealed[gameNumber][previousRound] + trianglesRevealed[gameNumber][previousRound];
             } else if (elimResult == EliminationResult.TriangleEliminated) {
                 playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][previousRound][msg
                     .sender] + playerSquaresRevealed[gameNumber][previousRound][msg.sender];
-                survivingPlays[gameNumber] =
-                    circlesRevealed[gameNumber][previousRound] + squaredRevealed[gameNumber][previousRound];
             } else {
                 revert("ZigZagZog.commitChoices: game has ended");
             }
@@ -221,14 +229,90 @@ contract ZigZagZog is EIP712 {
             "ZigZagZog.revealChoices: insufficient remaining plays"
         );
 
-        circlesRevealed[gameNumber][roundNumber] += numCircles;
-        squaredRevealed[gameNumber][roundNumber] += numSquares;
-        trianglesRevealed[gameNumber][roundNumber] += numTriangles;
-        playerCirclesRevealed[gameNumber][roundNumber][msg.sender] = numCircles;
-        playerSquaresRevealed[gameNumber][roundNumber][msg.sender] = numSquares;
-        playerTrianglesRevealed[gameNumber][roundNumber][msg.sender] = numTriangles;
+        if (numCircles > 0) {
+            circlePlayerCount[gameNumber][roundNumber] += 1;
+            circlesRevealed[gameNumber][roundNumber] += numCircles;
+            playerCirclesRevealed[gameNumber][roundNumber][msg.sender] = numCircles;
+            lastCircleRevealed[gameNumber][roundNumber] = msg.sender;
+        }
+
+        if (numSquares > 0) {
+            squarePlayerCount[gameNumber][roundNumber] += 1;
+            squaredRevealed[gameNumber][roundNumber] += numSquares;
+            playerSquaresRevealed[gameNumber][roundNumber][msg.sender] = numSquares;
+            lastSquareRevealed[gameNumber][roundNumber] = msg.sender;
+        }
+
+        if (numTriangles > 0) {
+            trianglePlayerCount[gameNumber][roundNumber] += 1;
+            trianglesRevealed[gameNumber][roundNumber] += numTriangles;
+            playerTrianglesRevealed[gameNumber][roundNumber][msg.sender] = numTriangles;
+            lastTriangleRevealed[gameNumber][roundNumber] = msg.sender;
+        }
 
         playerHasRevealed[gameNumber][roundNumber][msg.sender] = true;
+    }
+
+    function claimWinnings(uint256 gameNumber) external {
+        Game memory game = GameState[gameNumber];
+
+        EliminationResult elimResult = _calculateEliminationResult(
+            circlesRevealed[gameNumber][game.roundNumber],
+            squaredRevealed[gameNumber][game.roundNumber],
+            trianglesRevealed[gameNumber][game.roundNumber]
+        );
+
+        _updateSurvivingPlays(gameNumber, game.roundNumber, elimResult);
+
+        // Payout msg.sender proportional to equity
+    }
+
+    function hasGameEnded(uint256 gameNumber) external view returns (bool) {
+        Game memory game = GameState[gameNumber];
+
+        EliminationResult elimResult = _calculateEliminationResult(
+            circlesRevealed[gameNumber][game.roundNumber],
+            squaredRevealed[gameNumber][game.roundNumber],
+            trianglesRevealed[gameNumber][game.roundNumber]
+        );
+
+        uint256 rawCountRemaining;
+        if (elimResult == EliminationResult.CircleEliminated) {
+            rawCountRemaining =
+                squarePlayerCount[gameNumber][game.roundNumber] + trianglePlayerCount[gameNumber][game.roundNumber];
+            if (rawCountRemaining == 1) {
+                return true;
+            } else if (rawCountRemaining == 2) {
+                return lastSquareRevealed[gameNumber][game.roundNumber]
+                    == lastTriangleRevealed[gameNumber][game.roundNumber];
+            } else {
+                return false;
+            }
+        } else if (elimResult == EliminationResult.SquareEliminated) {
+            rawCountRemaining =
+                circlePlayerCount[gameNumber][game.roundNumber] + trianglePlayerCount[gameNumber][game.roundNumber];
+            if (rawCountRemaining == 1) {
+                return true;
+            } else if (rawCountRemaining == 2) {
+                return lastCircleRevealed[gameNumber][game.roundNumber]
+                    == lastTriangleRevealed[gameNumber][game.roundNumber];
+            } else {
+                return false;
+            }
+        } else if (elimResult == EliminationResult.TriangleEliminated) {
+            rawCountRemaining =
+                circlePlayerCount[gameNumber][game.roundNumber] + squarePlayerCount[gameNumber][game.roundNumber];
+            if (rawCountRemaining == 1) {
+                return true;
+            } else if (rawCountRemaining == 2) {
+                return
+                    lastCircleRevealed[gameNumber][game.roundNumber] == lastSquareRevealed[gameNumber][game.roundNumber];
+            } else {
+                return false;
+            }
+        } else {
+            return true;
+        }
     }
 
     function _calculateEliminationResult(uint256 _circlesRevealed, uint256 _squaresRevealed, uint256 _trianglesRevealed)
@@ -257,6 +341,21 @@ contract ZigZagZog is EIP712 {
             } else {
                 return EliminationResult.TriangleEliminated;
             }
+        }
+    }
+
+    function _updateSurvivingPlays(uint256 gameNumber, uint256 roundNumber, EliminationResult elimResult) internal {
+        uint256 previousRound = roundNumber - 1;
+
+        if (elimResult == EliminationResult.CircleEliminated) {
+            survivingPlays[gameNumber] =
+                squaredRevealed[gameNumber][previousRound] + trianglesRevealed[gameNumber][previousRound];
+        } else if (elimResult == EliminationResult.SquareEliminated) {
+            survivingPlays[gameNumber] =
+                circlesRevealed[gameNumber][previousRound] + trianglesRevealed[gameNumber][previousRound];
+        } else if (elimResult == EliminationResult.TriangleEliminated) {
+            survivingPlays[gameNumber] =
+                circlesRevealed[gameNumber][previousRound] + squaredRevealed[gameNumber][previousRound];
         }
     }
 }

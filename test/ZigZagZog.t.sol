@@ -192,6 +192,14 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        console.log("Shape-player counts: ");
+        console.log(game.circlePlayerCount(gameNumber, roundNumber));
+        console.log(game.squarePlayerCount(gameNumber, roundNumber));
+        console.log(game.trianglePlayerCount(gameNumber, roundNumber));
+
+        vm.warp(block.timestamp + revealDuration);
+        assertTrue(game.hasGameEnded(gameNumber));
+
         vm.stopPrank();
     }
 
@@ -334,72 +342,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         vm.stopPrank();
     }
 
-    // function test_commit_choices_round_2() public {
-    //     uint256 roundNumber = 1; // Ask contract for round number?
-
-    //     uint256 p1Nonce = 0x1902a;
-    //     uint256 numCircles = 6;
-    //     uint256 numSquares = 3;
-    //     uint256 numTriangles = 1;
-
-    //     bytes32 choicesMessageHash = game.choicesHash(
-    //         p1Nonce,
-    //         gameNumber,
-    //         roundNumber,
-    //         numCircles,
-    //         numSquares,
-    //         numTriangles
-    //     );
-    //     bytes memory signature = signMessageHash(
-    //         player1PrivateKey,
-    //         choicesMessageHash
-    //     );
-
-    //     vm.startPrank(player1);
-
-    //     assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
-    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
-
-    //     game.commitChoices(gameNumber, roundNumber, signature);
-
-    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
-
-    //     vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
-
-    //     game.revealChoices(
-    //         gameNumber,
-    //         roundNumber,
-    //         p1Nonce,
-    //         numCircles,
-    //         numSquares,
-    //         numTriangles
-    //     );
-
-    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-    //     assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
-
-    //     vm.warp(block.timestamp + revealDuration); // Reveal window has elapsed
-
-    //     roundNumber = 2;
-
-    //     choicesMessageHash = game.choicesHash(
-    //         p1Nonce,
-    //         gameNumber,
-    //         roundNumber,
-    //         numCircles,
-    //         numSquares,
-    //         numTriangles
-    //     );
-    //     signature = signMessageHash(player1PrivateKey, choicesMessageHash);
-    //     game.commitChoices(gameNumber, roundNumber, signature);
-
-    //     assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
-    //     assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
-
-    //     vm.stopPrank();
-    // }
-
     function testRevert_commit_if_round_has_not_started() public {
         uint256 roundNumber = 1; // Ask contract for round number?
 
@@ -462,5 +404,158 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         game.commitChoices(gameNumber, roundNumber, signature);
 
         vm.stopPrank();
+    }
+}
+
+/**
+ * multiplayer tests:
+ */
+contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
+    address[] public players;
+    mapping(address => uint256) public handCounts;
+    mapping(address => uint256) public buyinAmounts;
+    mapping(address => uint256) public playerPrivateKeys;
+    uint256 public gameNumber;
+    mapping(address => uint256) private playerNonces;
+    mapping(address => uint256[3]) private playerShapes; // Stores selected shapes [circles, squares, triangles]
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        // Define private keys and derive player addresses
+        uint256 privateKey1 = 0xA11CE;
+        uint256 privateKey2 = 0xB22DF;
+        uint256 privateKey3 = 0xC33BE;
+
+        address player1 = vm.addr(privateKey1);
+        address player2 = vm.addr(privateKey2);
+        address player3 = vm.addr(privateKey3);
+
+        players.push(player1);
+        players.push(player2);
+        players.push(player3);
+
+        // Store private keys for later use
+        playerPrivateKeys[player1] = privateKey1;
+        playerPrivateKeys[player2] = privateKey2;
+        playerPrivateKeys[player3] = privateKey3;
+
+        // Assign unique buy-in amounts
+        buyinAmounts[player1] = 12000 wei;
+        buyinAmounts[player2] = 8000 wei;
+        buyinAmounts[player3] = 15000 wei;
+
+        for (uint256 i = 0; i < players.length; i++) {
+            address player = players[i];
+            uint256 buyinAmount = buyinAmounts[player];
+            uint256 handCount = buyinAmount / playCost;
+            handCounts[player] = handCount;
+
+            vm.deal(player, buyinAmount); // Fund the player
+            vm.startPrank(player);
+            game.buyPlays{value: buyinAmount}();
+            vm.stopPrank();
+        }
+
+        gameNumber = game.currentGameNumber();
+    }
+
+    // Private helper function for a single player commit
+    function _commitChoicesForPlayer(address player, uint256 roundNumber) private {
+        require(handCounts[player] > 0, "Player has no plays");
+
+        // Retrieve pre-set shape choices
+        uint256 numCircles = playerShapes[player][0];
+        uint256 numSquares = playerShapes[player][1];
+        uint256 numTriangles = playerShapes[player][2];
+
+        uint256 playerNonce = uint256(keccak256(abi.encodePacked(player, roundNumber)));
+        playerNonces[player] = playerNonce; // Store nonce for later reveal
+
+        bytes32 choicesMessageHash =
+            game.choicesHash(playerNonce, gameNumber, roundNumber, numCircles, numSquares, numTriangles);
+
+        bytes memory signature = signMessageHash(playerPrivateKeys[player], choicesMessageHash);
+
+        vm.startPrank(player);
+        game.commitChoices(gameNumber, roundNumber, signature);
+        vm.stopPrank();
+
+        // Ensure the commitment was recorded
+        assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player));
+    }
+
+    // Private helper function for a single player reveal
+    function _revealChoicesForPlayer(address player, uint256 roundNumber) private {
+        require(handCounts[player] > 0, "Player has no plays");
+
+        // Retrieve pre-set shape choices
+        uint256 numCircles = playerShapes[player][0];
+        uint256 numSquares = playerShapes[player][1];
+        uint256 numTriangles = playerShapes[player][2];
+
+        uint256 playerNonce = playerNonces[player];
+
+        vm.startPrank(player);
+        game.revealChoices(gameNumber, roundNumber, playerNonce, numCircles, numSquares, numTriangles);
+        vm.stopPrank();
+
+        // Ensure the reveal was recorded
+        assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player));
+    }
+
+    function _playRound(uint256 roundNumber) private {
+        // All players commit their choices
+        for (uint256 i = 0; i < players.length; i++) {
+            _commitChoicesForPlayer(players[i], roundNumber);
+        }
+
+        // Warp time to simulate commit phase ending
+        vm.warp(block.timestamp + commitDuration + 1);
+
+        // All players reveal their choices
+        for (uint256 i = 0; i < players.length; i++) {
+            _revealChoicesForPlayer(players[i], roundNumber);
+        }
+
+        // Warp time to simulate reveal phase ending
+        vm.warp(block.timestamp + revealDuration);
+    }
+
+    // Test where all players commit first, then all players reveal
+    function test_full_game_multiplayer() public {
+        uint256 roundNumber = 1;
+
+        playerShapes[players[0]] = [4, 4, 4];
+        playerShapes[players[1]] = [2, 2, 4];
+        playerShapes[players[2]] = [5, 5, 5];
+
+        _playRound(roundNumber);
+
+        roundNumber = 2;
+
+        playerShapes[players[0]] = [3, 3, 2];
+        playerShapes[players[1]] = [2, 1, 1];
+        playerShapes[players[2]] = [4, 3, 3];
+
+        _playRound(roundNumber);
+
+        roundNumber = 3;
+
+        playerShapes[players[0]] = [2, 2, 1];
+        playerShapes[players[1]] = [1, 0, 1];
+        playerShapes[players[2]] = [2, 2, 2];
+
+        _playRound(roundNumber);
+
+        roundNumber = 4;
+
+        playerShapes[players[0]] = [1, 1, 1];
+        playerShapes[players[1]] = [1, 0, 0];
+        playerShapes[players[2]] = [4, 0, 0];
+
+        _playRound(roundNumber);
+
+        assertTrue(game.hasGameEnded(gameNumber));
     }
 }
