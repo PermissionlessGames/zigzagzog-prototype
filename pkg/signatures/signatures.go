@@ -123,8 +123,8 @@ func ChoicesMessageHash(chainId int64, zzzAddress string, nonce, gameNumber, rou
 		},
 		PrimaryType: "ChoicesMessage",
 		Domain: apitypes.TypedDataDomain{
-			Name:              "Moonstream Dropper",
-			Version:           "0.2.0",
+			Name:              "ZigZagZog",
+			Version:           "0.1.0",
 			ChainId:           (*math.HexOrDecimal256)(big.NewInt(chainId)),
 			VerifyingContract: zzzAddress,
 		},
