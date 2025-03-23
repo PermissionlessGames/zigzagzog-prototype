@@ -82,7 +82,7 @@ func CreateSigSignCommand() *cobra.Command {
 		},
 	}
 
-	sigSignCmd.Flags().Int64Var(&chainID, "chain-id", 1, "Chain ID of the network you are signing for.")
+	sigSignCmd.Flags().Int64Var(&chainID, "chain-id", 2187, "Chain ID of the network you are signing for.")
 	sigSignCmd.Flags().StringVar(&zzzAddress, "zzz", "0x0000000000000000000000000000000000000000", "Address of ZigZagZog contract")
 	sigSignCmd.Flags().StringVar(&nonce, "nonce", "0", "Commitment nonce")
 	sigSignCmd.Flags().StringVar(&gameNumber, "game", "0", "Game number")
@@ -130,7 +130,7 @@ func CreateSigVerifyCommand() *cobra.Command {
 		},
 	}
 
-	sigVerifyCmd.Flags().Int64Var(&chainID, "chain-id", 1, "Chain ID of the network you are signing for.")
+	sigVerifyCmd.Flags().Int64Var(&chainID, "chain-id", 2187, "Chain ID of the network you are signing for.")
 	sigVerifyCmd.Flags().StringVar(&zzzAddress, "zzz", "0x0000000000000000000000000000000000000000", "Address of ZigZagZog contract")
 	sigVerifyCmd.Flags().StringVar(&nonce, "nonce", "0", "Commitment nonce")
 	sigVerifyCmd.Flags().StringVar(&gameNumber, "game", "0", "Game number")
