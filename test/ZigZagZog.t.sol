@@ -227,6 +227,7 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         vm.stopPrank();
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
+        assertEq(game.playerCommitment(gameNumber, roundNumber, player1), signature);
     }
 
     function testRevert_commit_multiple_times() public {
