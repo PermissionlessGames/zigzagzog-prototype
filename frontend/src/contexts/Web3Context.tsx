@@ -113,6 +113,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   // Connect wallet
   const connect = useCallback(async () => {
+    console.log("Connecting");
     if (!isMetaMaskAvailable()) {
       alert("Please install MetaMask to use this application");
       return;
@@ -129,6 +130,9 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
       }
       
       await ethereum.request({ method: "eth_requestAccounts" });
+      console.log("Switching network");
+      await switchNetwork();
+
       
       // Create provider and signer
       const provider = new ethers.BrowserProvider(ethereum);
@@ -162,7 +166,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   // Disconnect wallet
   const disconnect = useCallback(() => {
-    // MetaMask doesn't have a disconnect method in its API
+    // MetaMask doesn't have a disconnect method in its API //It's not true 
     // The best we can do is clear our local state
     setAccount(null);
     setProvider(null);
@@ -182,7 +186,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
 
   // Switch network
   const switchNetwork = async () => {
-    if (!isMetaMaskAvailable() || !provider) return;
+    // if (!isMetaMaskAvailable() || !provider) return;
     
     const ethereum = window.ethereum;
     if (!ethereum) {
@@ -190,6 +194,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
     }
     
     try {
+      console.log("Switching network to", `0x${config.chainId.toString(16)}`);
       await ethereum.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: `0x${config.chainId.toString(16)}` }],
@@ -241,8 +246,8 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
     };
 
     const handleChainChanged = (chainIdHex: string) => {
-      // MetaMask requires page refresh on chain change
-      window.location.reload();
+      // MetaMask requires page refresh on chain change //It's not true
+      // window.location.reload();
     };
 
     const ethereum = window.ethereum;
@@ -280,7 +285,7 @@ export const Web3Provider = ({ children }: Web3ProviderProps) => {
         ethereum.removeListener("chainChanged", handleChainChanged);
       }
     };
-  }, [account, provider]);
+  }, []);
 
   const contextValue: Web3ContextType = {
     ...config,
