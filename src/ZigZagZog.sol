@@ -35,9 +35,9 @@ contract ZigZagZog is EIP712 {
     // Game number => player address => number of hands purchased
     mapping(uint256 => mapping(address => uint256)) public purchasedPlays;
     // Game number => number of plays remaining
-    mapping(uint256 => uint256) survivingPlays;
+    mapping(uint256 => uint256) public survivingPlays;
     // Game number => player address => number of plays remaining
-    mapping(uint256 => mapping(address => uint256)) playerSurvivingPlays;
+    mapping(uint256 => mapping(address => uint256)) public playerSurvivingPlays;
     // Game number => round number => player address => player has committed
     mapping(uint256 => mapping(uint256 => mapping(address => bool)))
         public playerHasCommitted;
@@ -46,19 +46,22 @@ contract ZigZagZog is EIP712 {
         public playerHasRevealed;
     // Game number => round number => player address => player commitment
     mapping(uint256 => mapping(uint256 => mapping(address => bytes)))
-        public playerCommittment;
+        public playerCommitment;
     // Game number => round number => # of circles revealed
-    mapping(uint256 => mapping(uint256 => uint256)) circlesRevealed;
+    mapping(uint256 => mapping(uint256 => uint256)) public circlesRevealed;
     // Game number => round number => # of squares revealed
-    mapping(uint256 => mapping(uint256 => uint256)) squaredRevealed;
+    mapping(uint256 => mapping(uint256 => uint256)) public squaredRevealed;
     // Game number => round number => # of triangles revealed
-    mapping(uint256 => mapping(uint256 => uint256)) trianglesRevealed;
+    mapping(uint256 => mapping(uint256 => uint256)) public trianglesRevealed;
     // Game number => round number => player address => # of circles revealed by player
-    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) playerCirclesRevealed;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+        public playerCirclesRevealed;
     // Game number => round number => player address => # of squares revealed by player
-    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) playerSquaresRevealed;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+        public playerSquaresRevealed;
     // Game number => round number => player address => # of triangles revealed by player
-    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) playerTrianglesRevealed;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+        public playerTrianglesRevealed;
     // Game number => round number => # of accounts revealing a circle
     mapping(uint256 => mapping(uint256 => uint256)) public circlePlayerCount;
     // Game number => round number => # of accounts revealing a square
@@ -227,7 +230,7 @@ contract ZigZagZog is EIP712 {
         }
 
         playerHasCommitted[gameNumber][roundNumber][msg.sender] = true;
-        playerCommittment[gameNumber][roundNumber][msg.sender] = signature;
+        playerCommitment[gameNumber][roundNumber][msg.sender] = signature;
 
         emit PlayerCommitment(msg.sender, gameNumber, roundNumber);
     }
@@ -268,7 +271,7 @@ contract ZigZagZog is EIP712 {
             SignatureChecker.isValidSignatureNow(
                 msg.sender,
                 choicesMessageHash,
-                playerCommittment[gameNumber][roundNumber][msg.sender]
+                playerCommitment[gameNumber][roundNumber][msg.sender]
             ),
             "ZigZagZog.revealChoices: invalid signature"
         );
