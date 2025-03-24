@@ -249,7 +249,7 @@ contract ZigZagZog is EIP712 {
 
         require(
             numCircles + numSquares + numTriangles == playerSurvivingPlays[gameNumber][msg.sender],
-            "ZigZagZog.revealChoices: insufficient remaining plays"
+            "ZigZagZog.revealChoices: number of revealed plays does not match surviving plays"
         );
 
         if (numCircles > 0) {
