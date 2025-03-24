@@ -177,15 +177,15 @@ export function GameOverview({
       newPhase = 'nextRound';
     }
     
-    console.log('Calculating phase:', {
-      now,
-      roundTimestamp,
-      commitDuration,
-      revealDuration,
-      commitEndTime,
-      roundEndTime,
-      newPhase
-    });
+    // console.log('Calculating phase:', {
+    //   now,
+    //   roundTimestamp,
+    //   commitDuration,
+    //   revealDuration,
+    //   commitEndTime,
+    //   roundEndTime,
+    //   newPhase
+    // });
     
     setCurrentGamePhase(newPhase);
   }, [roundNumber, roundTimestamp, commitDuration, revealDuration, now, commitEndTime, roundEndTime]);
@@ -237,27 +237,27 @@ export function GameOverview({
   
   const needsBuyIn = playerRemainingPlays === 0;
     
-  console.log('GameOverview Debug:', { 
-    playerRemainingPlays, 
-    currentGamePhase,
-    isPastRoundEnd: isPastRoundEnd(),
-    canCommitDuringCommitPhase,
-    canCommitForNewRound,
-    now,
-    roundTimestamp,
-    commitDuration,
-    revealDuration,
-    commitEndTime,
-    roundEndTime,
-    timeUntilCommitEnd: commitEndTime - now,
-    timeUntilRoundEnd: roundEndTime - now,
-    hasCommitted, 
-    hasRevealed,
-    canCommit,
-    canReveal,
-    needsBuyIn,
-    roundNumber
-  });
+  // console.log('GameOverview Debug:', { 
+  //   playerRemainingPlays, 
+  //   currentGamePhase,
+  //   isPastRoundEnd: isPastRoundEnd(),
+  //   canCommitDuringCommitPhase,
+  //   canCommitForNewRound,
+  //   now,
+  //   roundTimestamp,
+  //   commitDuration,
+  //   revealDuration,
+  //   commitEndTime,
+  //   roundEndTime,
+  //   timeUntilCommitEnd: commitEndTime - now,
+  //   timeUntilRoundEnd: roundEndTime - now,
+  //   hasCommitted, 
+  //   hasRevealed,
+  //   canCommit,
+  //   canReveal,
+  //   needsBuyIn,
+  //   roundNumber
+  // });
   
   return (
     <div className="container">
