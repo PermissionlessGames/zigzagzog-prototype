@@ -96,16 +96,36 @@ contract ZigZagZog is EIP712 {
         // Deployed event
     }
 
-    function buyPlays() external payable {
-        if (
-            block.timestamp >
-            GameState[currentGameNumber].gameTimestamp + commitDuration ||
-            currentGameNumber == 0
-        ) {
+    function buyPlays(uint256 gameNumber) external payable {
+        if (currentGameNumber == 0) {
             currentGameNumber++;
             GameState[currentGameNumber].gameTimestamp = block.timestamp;
             GameState[currentGameNumber].roundNumber = 1;
             GameState[currentGameNumber].roundTimestamp = block.timestamp;
+        }
+
+        if (gameNumber == currentGameNumber) {
+            require(
+                block.timestamp <=
+                    GameState[currentGameNumber].gameTimestamp + commitDuration,
+                "ZigZagZog.buyPlays: game is not in the first commit phase"
+            );
+        } else if (gameNumber == currentGameNumber + 1) {
+            Game storage currentGame = GameState[currentGameNumber];
+            require(
+                block.timestamp >
+                    currentGame.roundTimestamp +
+                        commitDuration +
+                        revealDuration &&
+                    _willGameEnd(currentGameNumber, currentGame.roundNumber),
+                "ZigZagZog.buyPlays: previous game has not yet ended"
+            );
+            currentGameNumber++;
+            GameState[currentGameNumber].gameTimestamp = block.timestamp;
+            GameState[currentGameNumber].roundNumber = 1;
+            GameState[currentGameNumber].roundTimestamp = block.timestamp;
+        } else {
+            revert("ZigZagZog.buyPlays: game number is invalid");
         }
 
         uint256 numPlays = msg.value / playCost;
@@ -310,6 +330,12 @@ contract ZigZagZog is EIP712 {
         }
 
         playerHasRevealed[gameNumber][roundNumber][msg.sender] = true;
+
+        if (_willGameEnd(gameNumber, roundNumber)) {
+            GameState[gameNumber + 1].gameTimestamp = block.timestamp;
+        } else {
+            GameState[gameNumber + 1].gameTimestamp = 0;
+        }
     }
 
     function claimWinnings(uint256 gameNumber) external {
@@ -327,51 +353,66 @@ contract ZigZagZog is EIP712 {
     }
 
     function hasGameEnded(uint256 gameNumber) external view returns (bool) {
+        // Check timers.
         Game memory game = GameState[gameNumber];
 
+        return _willGameEnd(gameNumber, game.roundNumber);
+    }
+
+    function _willGameEnd(
+        uint256 gameNumber,
+        uint256 roundNumber
+    ) internal view returns (bool) {
+        uint256 circles = circlesRevealed[gameNumber][roundNumber];
+        uint256 squares = squaredRevealed[gameNumber][roundNumber];
+        uint256 triangles = trianglesRevealed[gameNumber][roundNumber];
+        if (circles + squares + triangles == 0) {
+            return true;
+        }
+
         EliminationResult elimResult = _calculateEliminationResult(
-            circlesRevealed[gameNumber][game.roundNumber],
-            squaredRevealed[gameNumber][game.roundNumber],
-            trianglesRevealed[gameNumber][game.roundNumber]
+            circles,
+            squares,
+            triangles
         );
 
         uint256 rawCountRemaining;
         if (elimResult == EliminationResult.CircleEliminated) {
             rawCountRemaining =
-                squarePlayerCount[gameNumber][game.roundNumber] +
-                trianglePlayerCount[gameNumber][game.roundNumber];
+                squarePlayerCount[gameNumber][roundNumber] +
+                trianglePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
                 return true;
             } else if (rawCountRemaining == 2) {
                 return
-                    lastSquareRevealed[gameNumber][game.roundNumber] ==
-                    lastTriangleRevealed[gameNumber][game.roundNumber];
+                    lastSquareRevealed[gameNumber][roundNumber] ==
+                    lastTriangleRevealed[gameNumber][roundNumber];
             } else {
                 return false;
             }
         } else if (elimResult == EliminationResult.SquareEliminated) {
             rawCountRemaining =
-                circlePlayerCount[gameNumber][game.roundNumber] +
-                trianglePlayerCount[gameNumber][game.roundNumber];
+                circlePlayerCount[gameNumber][roundNumber] +
+                trianglePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
                 return true;
             } else if (rawCountRemaining == 2) {
                 return
-                    lastCircleRevealed[gameNumber][game.roundNumber] ==
-                    lastTriangleRevealed[gameNumber][game.roundNumber];
+                    lastCircleRevealed[gameNumber][roundNumber] ==
+                    lastTriangleRevealed[gameNumber][roundNumber];
             } else {
                 return false;
             }
         } else if (elimResult == EliminationResult.TriangleEliminated) {
             rawCountRemaining =
-                circlePlayerCount[gameNumber][game.roundNumber] +
-                squarePlayerCount[gameNumber][game.roundNumber];
+                circlePlayerCount[gameNumber][roundNumber] +
+                squarePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
                 return true;
             } else if (rawCountRemaining == 2) {
                 return
-                    lastCircleRevealed[gameNumber][game.roundNumber] ==
-                    lastSquareRevealed[gameNumber][game.roundNumber];
+                    lastCircleRevealed[gameNumber][roundNumber] ==
+                    lastSquareRevealed[gameNumber][roundNumber];
             } else {
                 return false;
             }
