@@ -315,11 +315,6 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertTrue(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
-        console.log("Shape-player counts: ");
-        console.log(game.circlePlayerCount(gameNumber, roundNumber));
-        console.log(game.squarePlayerCount(gameNumber, roundNumber));
-        console.log(game.trianglePlayerCount(gameNumber, roundNumber));
-
         vm.warp(block.timestamp + revealDuration);
         assertTrue(game.hasGameEnded(gameNumber));
 
@@ -649,6 +644,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
     address[] public players;
     mapping(address => uint256) public playCounts;
     mapping(address => uint256) public buyinAmounts;
+    mapping(address => uint256) public initialBalances;
     mapping(address => uint256) public playerPrivateKeys;
     uint256 public gameNumber;
     mapping(address => uint256) private playerNonces;
@@ -687,6 +683,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
             playCounts[player] = playCount;
 
             vm.deal(player, buyinAmount); // Fund the player
+            initialBalances[player] = player.balance;
             vm.startPrank(player);
             game.buyPlays{value: buyinAmount}(1);
             vm.stopPrank();
@@ -791,6 +788,11 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
 
         _playRound(roundNumber);
 
+        assertEq(
+            players[0].balance,
+            initialBalances[players[0]] - buyinAmounts[players[0]]
+        );
+
         assertFalse(game.hasGameEnded(gameNumber));
         vm.prank(players[0]);
         vm.expectRevert("ZigZagZog.claimWinnings: game has not yet ended");
@@ -831,7 +833,15 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertTrue(game.hasGameEnded(gameNumber));
+
         vm.prank(players[0]);
         game.claimWinnings(gameNumber);
+
+        assertEq(
+            players[0].balance,
+            initialBalances[players[0]] +
+                buyinAmounts[players[1]] +
+                buyinAmounts[players[2]]
+        );
     }
 }
