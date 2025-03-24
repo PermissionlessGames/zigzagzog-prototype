@@ -7,7 +7,8 @@ import (
 
 	"github.com/PermissionlessGames/zigzagzog-prototype/version"
 
-	"github.com/PermissionlessGames/zigzagzog-prototype/bindings/ZigZagZog"
+	zigzagzog "github.com/PermissionlessGames/zigzagzog-prototype/bindings/ZigZagZog"
+	"github.com/PermissionlessGames/zigzagzog-prototype/pkg/signatures"
 )
 
 func CreateRootCommand() *cobra.Command {
@@ -23,10 +24,13 @@ func CreateRootCommand() *cobra.Command {
 	completionCmd := CreateCompletionCommand(rootCmd)
 	versionCmd := CreateVersionCommand()
 
-	zzzCmd := zigzagzog.CreateZigZagZogCommand()
-	zzzCmd.Use = "contract"
+	contractCmd := zigzagzog.CreateZigZagZogCommand()
+	contractCmd.Use = "contract"
 
-	rootCmd.AddCommand(completionCmd, versionCmd, zzzCmd)
+	sigCmd := signatures.CreateSigCommand()
+	sigCmd.Use = "sig"
+
+	rootCmd.AddCommand(completionCmd, versionCmd, contractCmd, sigCmd)
 	// By default, cobra Command objects write to stderr. We have to forcibly set them to output to
 	// stdout.
 	rootCmd.SetOut(os.Stdout)

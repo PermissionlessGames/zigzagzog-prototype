@@ -1,4 +1,4 @@
-.PHONY: build test clean rebuild retest list-forge-tests bindings build-contracts rebuild-contracts clean-contracts unbind rebind
+.PHONY: build test clean rebuild retest list-forge-tests bind build-contracts rebuild-contracts clean-contracts unbind rebind
 
 build: build-contracts bind zzz
 
@@ -30,8 +30,8 @@ retest: clean test
 
 out/ZigZagZog.sol/ZigZagZog.json: build-contracts
 
-bindings/zigzagzog/ZigZagZog.go: build-contracts
-	mkdir -p bindings/zigzagzog
+bindings/ZigZagZog/ZigZagZog.go: build-contracts
+	mkdir -p bindings/ZigZagZog
 	seer evm generate \
 		--cli \
 		--foundry out/ZigZagZog.sol/ZigZagZog.json \
@@ -39,9 +39,9 @@ bindings/zigzagzog/ZigZagZog.go: build-contracts
 		--struct ZigZagZog \
 		--output bindings/zigzagzog/ZigZagZog.go
 
-bind: bindings/zigzagzog/ZigZagZog.go
+bind: bindings/ZigZagZog/ZigZagZog.go
 
 unbind:
-	rm -f bindings/zigzagzog/*
+	rm -f bindings/ZigZagZog/*
 
 rebind: unbind bind

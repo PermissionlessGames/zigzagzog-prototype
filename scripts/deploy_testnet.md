@@ -18,8 +18,9 @@
     
     ```bash
 		./zzz contract deploy \
-			--game-length 30 \
-			--hand-cost 1000 \
+			--play-cost 1000 \
+			--commit-duration 120 \
+			--reveal-duration 120 \
 			--rpc $RPC \
 			--keyfile $EXECUTOR_KEY \
 			--password $PASSWORD
