@@ -68,6 +68,8 @@ contract ZigZagZog is EIP712 {
     mapping(uint256 => mapping(uint256 => address)) public lastSquareRevealed;
     // Game number => round number => account revealing last triangle
     mapping(uint256 => mapping(uint256 => address)) public lastTriangleRevealed;
+    // Game number => player address => has claimed
+    mapping(uint256 => mapping(address => bool)) public playerCashedOut;
 
     uint256 public currentGameNumber = 0;
 
@@ -119,7 +121,7 @@ contract ZigZagZog is EIP712 {
         survivingPlays[currentGameNumber] += numPlays;
 
         uint256 stakedAmount = numPlays * playCost;
-        gameBalance[currentGameNumber] = stakedAmount;
+        gameBalance[currentGameNumber] += stakedAmount;
         uint256 excess = msg.value - stakedAmount;
         if (excess > 0) {
             payable(msg.sender).transfer(excess); // Refund excess native token
@@ -283,15 +285,39 @@ contract ZigZagZog is EIP712 {
     function claimWinnings(uint256 gameNumber) external {
         Game memory game = GameState[gameNumber];
 
+        require(block.timestamp > game.roundTimestamp + commitDuration + revealDuration);
+        require(!playerCashedOut[gameNumber][msg.sender], "ZigZagZog.claimWinnings: player already claimed");
+
         EliminationResult elimResult = _calculateEliminationResult(
             circlesRevealed[gameNumber][game.roundNumber],
             squaredRevealed[gameNumber][game.roundNumber],
             trianglesRevealed[gameNumber][game.roundNumber]
         );
 
-        _updateSurvivingPlays(gameNumber, game.roundNumber, elimResult);
+        _updateSurvivingPlays(gameNumber, game.roundNumber + 1, elimResult);
 
-        // Payout msg.sender proportional to equity
+        if (elimResult == EliminationResult.CircleEliminated) {
+            playerSurvivingPlays[gameNumber][msg.sender] = playerSquaresRevealed[gameNumber][game.roundNumber][msg
+                .sender] + playerTrianglesRevealed[gameNumber][game.roundNumber][msg.sender];
+        } else if (elimResult == EliminationResult.SquareEliminated) {
+            playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][game.roundNumber][msg
+                .sender] + playerTrianglesRevealed[gameNumber][game.roundNumber][msg.sender];
+        } else if (elimResult == EliminationResult.TriangleEliminated) {
+            playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][game.roundNumber][msg
+                .sender] + playerSquaresRevealed[gameNumber][game.roundNumber][msg.sender];
+        } else {
+            revert("ZigZagZog.claimWinnings: panic");
+        }
+
+        require(_willGameEnd(gameNumber, game.roundNumber), "ZigZagZog.claimWinnings: game has not yet ended");
+
+        // Payout
+        playerCashedOut[gameNumber][msg.sender] = true;
+        uint256 payoutAmount = (
+            ((gameBalance[gameNumber] * playerSurvivingPlays[gameNumber][msg.sender]) << 64)
+                / survivingPlays[gameNumber]
+        ) >> 64;
+        payable(msg.sender).transfer(payoutAmount);
     }
 
     function hasGameEnded(uint256 gameNumber) external view returns (bool) {
