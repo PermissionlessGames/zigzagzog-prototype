@@ -673,20 +673,11 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         vm.prank(players[2]);
         game.claimWinnings(gameNumber);
 
-        assertEq(
-            players[0].balance,
-            initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 3
-        );
+        assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 3);
 
-        assertEq(
-            players[1].balance,
-            initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3
-        );
+        assertEq(players[1].balance, initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3);
 
-        assertEq(
-            players[2].balance,
-            initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 3
-        );
+        assertEq(players[2].balance, initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 3);
     }
 
     function test_claims_three_way_tie_uneven_split() public {
@@ -719,19 +710,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         vm.prank(players[2]);
         game.claimWinnings(gameNumber);
 
-        assertEq(
-            players[0].balance,
-            initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 6
-        );
+        assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 6);
 
-        assertEq(
-            players[1].balance,
-            initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3
-        );
+        assertEq(players[1].balance, initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3);
 
-        assertEq(
-            players[2].balance,
-            initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 2
-        );
+        assertEq(players[2].balance, initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 2);
     }
 }

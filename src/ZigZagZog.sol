@@ -306,16 +306,9 @@ contract ZigZagZog is EIP712 {
             playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][game.roundNumber][msg
                 .sender] + playerSquaresRevealed[gameNumber][game.roundNumber][msg.sender];
         } else {
-            playerSurvivingPlays[gameNumber][msg.sender] =
-                playerCirclesRevealed[gameNumber][game.roundNumber][
-                    msg.sender
-                ] +
-                playerSquaresRevealed[gameNumber][game.roundNumber][
-                    msg.sender
-                ] +
-                playerTrianglesRevealed[gameNumber][game.roundNumber][
-                    msg.sender
-                ];
+            playerSurvivingPlays[gameNumber][msg.sender] = playerCirclesRevealed[gameNumber][game.roundNumber][msg
+                .sender] + playerSquaresRevealed[gameNumber][game.roundNumber][msg.sender]
+                + playerTrianglesRevealed[gameNumber][game.roundNumber][msg.sender];
         }
 
         require(_willGameEnd(gameNumber, game.roundNumber), "ZigZagZog.claimWinnings: game has not yet ended");
