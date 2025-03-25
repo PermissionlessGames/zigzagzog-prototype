@@ -1,9 +1,12 @@
 .PHONY: build test clean rebuild retest list-forge-tests bind build-contracts rebuild-contracts clean-contracts unbind rebind
 
-build: build-contracts bind zzz
+build: build-contracts bind zzz zerve
 
 zzz:
 	go build -o zzz ./cmd/zzz
+
+zerve:
+	go build -o zerve ./cmd/zerve
 
 build-contracts: src/ZigZagZog.sol
 	forge build
@@ -17,6 +20,7 @@ src/ZigZagZog.sol:
 
 clean: clean-contracts unbind
 	rm -f zzz
+	rm -f zerve
 
 clean-contracts:
 	rm -rf out/
