@@ -595,6 +595,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]]);
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.TriangleEliminated)
+        );
 
         assertFalse(game.hasGameEnded(gameNumber));
         vm.prank(players[0]);
@@ -610,6 +614,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertFalse(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
         vm.prank(players[0]);
         vm.expectRevert("ZigZagZog.claimWinnings: game has not yet ended");
         game.claimWinnings(gameNumber);
@@ -623,6 +631,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertFalse(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
         vm.prank(players[0]);
         vm.expectRevert("ZigZagZog.claimWinnings: game has not yet ended");
         game.claimWinnings(gameNumber);
@@ -636,6 +648,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertTrue(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
 
         vm.prank(players[0]);
         game.claimWinnings(gameNumber);

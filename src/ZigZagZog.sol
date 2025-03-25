@@ -329,6 +329,14 @@ contract ZigZagZog is EIP712 {
         return _willGameEnd(gameNumber, game.roundNumber);
     }
 
+    function getRoundOutcome(uint256 gameNumber, uint256 roundNumber) public view returns (EliminationResult) {
+        return _calculateEliminationResult(
+            circlesRevealed[gameNumber][roundNumber],
+            squaredRevealed[gameNumber][roundNumber],
+            trianglesRevealed[gameNumber][roundNumber]
+        );
+    }
+
     function _willGameEnd(uint256 gameNumber, uint256 roundNumber) internal view returns (bool) {
         uint256 circles = circlesRevealed[gameNumber][roundNumber];
         uint256 squares = squaredRevealed[gameNumber][roundNumber];
