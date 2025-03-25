@@ -475,6 +475,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
     mapping(address => uint256) public initialBalances;
     mapping(address => uint256) public playerPrivateKeys;
     uint256 public gameNumber;
+    uint256 pot;
     mapping(address => uint256) private playerNonces;
     mapping(address => uint256[3]) private playerShapes; // Stores selected shapes [circles, squares, triangles]
 
@@ -501,7 +502,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
 
         // Assign unique buy-in amounts
         buyinAmounts[player1] = 12000 wei;
-        buyinAmounts[player2] = 8000 wei;
+        buyinAmounts[player2] = 9000 wei;
         buyinAmounts[player3] = 15000 wei;
 
         for (uint256 i = 0; i < players.length; i++) {
@@ -518,6 +519,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         }
 
         gameNumber = game.currentGameNumber();
+        pot = game.gameBalance(gameNumber);
     }
 
     // Private helper function for a single player commit
@@ -587,7 +589,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         uint256 roundNumber = 1;
 
         playerShapes[players[0]] = [4, 4, 4];
-        playerShapes[players[1]] = [2, 2, 4];
+        playerShapes[players[1]] = [2, 2, 5];
         playerShapes[players[2]] = [5, 5, 5];
 
         _playRound(roundNumber);
@@ -639,5 +641,97 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         game.claimWinnings(gameNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] + buyinAmounts[players[1]] + buyinAmounts[players[2]]);
+    }
+
+    function test_claims_three_way_tie_even_split() public {
+        uint256 roundNumber = 1;
+
+        playerShapes[players[0]] = [3, 3, 6];
+        playerShapes[players[1]] = [3, 3, 3];
+        playerShapes[players[2]] = [3, 3, 9];
+
+        _playRound(roundNumber);
+
+        assertFalse(game.hasGameEnded(gameNumber));
+
+        roundNumber = 2;
+
+        playerShapes[players[0]] = [6, 0, 0];
+        playerShapes[players[1]] = [0, 6, 0];
+        playerShapes[players[2]] = [0, 0, 6];
+
+        _playRound(roundNumber);
+
+        assertTrue(game.hasGameEnded(gameNumber));
+
+        vm.prank(players[0]);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[1]);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[2]);
+        game.claimWinnings(gameNumber);
+
+        assertEq(
+            players[0].balance,
+            initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 3
+        );
+
+        assertEq(
+            players[1].balance,
+            initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3
+        );
+
+        assertEq(
+            players[2].balance,
+            initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 3
+        );
+    }
+
+    function test_claims_three_way_tie_uneven_split() public {
+        uint256 roundNumber = 1;
+
+        playerShapes[players[0]] = [1, 2, 9];
+        playerShapes[players[1]] = [3, 3, 3];
+        playerShapes[players[2]] = [3, 6, 6];
+
+        _playRound(roundNumber);
+
+        assertFalse(game.hasGameEnded(gameNumber));
+
+        roundNumber = 2;
+
+        playerShapes[players[0]] = [1, 1, 1];
+        playerShapes[players[1]] = [2, 2, 2];
+        playerShapes[players[2]] = [3, 3, 3];
+
+        _playRound(roundNumber);
+
+        assertTrue(game.hasGameEnded(gameNumber));
+
+        vm.prank(players[0]);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[1]);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[2]);
+        game.claimWinnings(gameNumber);
+
+        assertEq(
+            players[0].balance,
+            initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 6
+        );
+
+        assertEq(
+            players[1].balance,
+            initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 3
+        );
+
+        assertEq(
+            players[2].balance,
+            initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 2
+        );
     }
 }
