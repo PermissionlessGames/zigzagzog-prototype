@@ -22,6 +22,20 @@ contract ZigZagZogTestBase is Test {
     address randomPerson = vm.addr(randomPersonPrivateKey);
     address poorPlayer = vm.addr(poorPlayerPrivateKey);
 
+    event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
+    event PlayerCommitment(address indexed playerAddress, uint256 indexed gameNumber, uint256 indexed roundNumber);
+    event PlayerReveal(
+        address indexed playerAddress,
+        uint256 indexed gameNumber,
+        uint256 indexed roundNumber,
+        uint256 numCircles,
+        uint256 numSquares,
+        uint256 numTriangles
+    );
+    event WinningsClaimed(
+        address indexed playerAddress, uint256 indexed gameNumber, uint256 indexed roundNumber, uint256 payoutAmount
+    );
+
     function _signMessageHash(uint256 privateKey, bytes32 messageHash) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
         return abi.encodePacked(r, s, v);
@@ -62,13 +76,15 @@ contract ZigZagZogTest_deployment is ZigZagZogTestBase {
  */
 contract ZigZagZogTest_buyPlays is ZigZagZogTestBase {
     function test_buy_plays() public {
-        uint256 buyinAmount = 10 * playCost;
+        uint256 gameNumber = 1;
+        uint256 numPlays = 10;
+        uint256 buyinAmount = numPlays * playCost;
         uint256 initialBalance = player1.balance;
 
         vm.startPrank(player1);
-        game.buyPlays{value: buyinAmount}(1);
-
-        uint256 gameNumber = game.currentGameNumber();
+        vm.expectEmit();
+        emit PlaysBought(player1, gameNumber, numPlays);
+        game.buyPlays{value: buyinAmount}(gameNumber);
 
         assertEq(game.gameBalance(gameNumber), buyinAmount);
         assertEq(player1.balance, initialBalance - buyinAmount);
@@ -107,14 +123,15 @@ contract ZigZagZogTest_buyPlays is ZigZagZogTestBase {
     }
 
     function test_buy_plays_will_refund_excess_payment() public {
+        uint256 gameNumber = 1;
         uint256 buyinAmount = playCost + 10 wei;
         uint256 initialBalance = player1.balance;
 
         vm.startPrank(player1);
-        game.buyPlays{value: buyinAmount}(1);
+        vm.expectEmit();
+        emit PlaysBought(player1, gameNumber, 1);
+        game.buyPlays{value: buyinAmount}(gameNumber);
         vm.stopPrank();
-
-        uint256 gameNumber = game.currentGameNumber();
 
         assertEq(player1.balance, initialBalance - playCost);
 
@@ -191,6 +208,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         bytes memory signature = _signMessageHash(player1PrivateKey, choicesMessageHash);
 
         vm.startPrank(player1);
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
         vm.stopPrank();
 
@@ -243,6 +262,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -250,6 +271,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
 
         vm.warp(block.timestamp + commitDuration + 1); // Commit window has elapsed
 
+        vm.expectEmit();
+        emit PlayerReveal(player1, gameNumber, roundNumber, numCircles, numSquares, numTriangles);
         game.revealChoices(gameNumber, roundNumber, p1Nonce, numCircles, numSquares, numTriangles);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -278,6 +301,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -316,6 +341,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -357,6 +384,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -387,6 +416,8 @@ contract ZigZagZogTest_commitChoices is ZigZagZogTestBase {
         assertFalse(game.playerHasCommitted(gameNumber, roundNumber, player1));
         assertFalse(game.playerHasRevealed(gameNumber, roundNumber, player1));
 
+        vm.expectEmit();
+        emit PlayerCommitment(player1, gameNumber, roundNumber);
         game.commitChoices(gameNumber, roundNumber, signature);
 
         assertTrue(game.playerHasCommitted(gameNumber, roundNumber, player1));
@@ -595,6 +626,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]]);
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.TriangleEliminated)
+        );
 
         assertFalse(game.hasGameEnded(gameNumber));
         vm.prank(players[0]);
@@ -610,6 +645,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertFalse(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
         vm.prank(players[0]);
         vm.expectRevert("ZigZagZog.claimWinnings: game has not yet ended");
         game.claimWinnings(gameNumber);
@@ -623,6 +662,10 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertFalse(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
         vm.prank(players[0]);
         vm.expectRevert("ZigZagZog.claimWinnings: game has not yet ended");
         game.claimWinnings(gameNumber);
@@ -636,8 +679,14 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         _playRound(roundNumber);
 
         assertTrue(game.hasGameEnded(gameNumber));
+        assertEq(
+            uint256(game.getRoundOutcome(gameNumber, roundNumber)),
+            uint256(ZigZagZog.EliminationResult.CircleEliminated)
+        );
 
         vm.prank(players[0]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[0], gameNumber, roundNumber, pot);
         game.claimWinnings(gameNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] + buyinAmounts[players[1]] + buyinAmounts[players[2]]);
@@ -665,12 +714,18 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         assertTrue(game.hasGameEnded(gameNumber));
 
         vm.prank(players[0]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[0], gameNumber, roundNumber, pot / 3);
         game.claimWinnings(gameNumber);
 
         vm.prank(players[1]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[1], gameNumber, roundNumber, pot / 3);
         game.claimWinnings(gameNumber);
 
         vm.prank(players[2]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[2], gameNumber, roundNumber, pot / 3);
         game.claimWinnings(gameNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 3);
@@ -702,12 +757,18 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         assertTrue(game.hasGameEnded(gameNumber));
 
         vm.prank(players[0]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[0], gameNumber, roundNumber, pot / 6);
         game.claimWinnings(gameNumber);
 
         vm.prank(players[1]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[1], gameNumber, roundNumber, pot / 3);
         game.claimWinnings(gameNumber);
 
         vm.prank(players[2]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[2], gameNumber, roundNumber, pot / 2);
         game.claimWinnings(gameNumber);
 
         assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 6);

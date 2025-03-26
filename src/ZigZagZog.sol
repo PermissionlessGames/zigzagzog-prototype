@@ -75,7 +75,19 @@ contract ZigZagZog is EIP712 {
 
     mapping(uint256 => Game) public GameState;
 
+    event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
     event PlayerCommitment(address indexed playerAddress, uint256 indexed gameNumber, uint256 indexed roundNumber);
+    event PlayerReveal(
+        address indexed playerAddress,
+        uint256 indexed gameNumber,
+        uint256 indexed roundNumber,
+        uint256 numCircles,
+        uint256 numSquares,
+        uint256 numTriangles
+    );
+    event WinningsClaimed(
+        address indexed playerAddress, uint256 indexed gameNumber, uint256 indexed roundNumber, uint256 payoutAmount
+    );
 
     constructor(uint256 _playCost, uint64 _commitDuration, uint64 _revealDuration)
         EIP712("ZigZagZog", ZigZagZogVersion)
@@ -126,6 +138,8 @@ contract ZigZagZog is EIP712 {
         if (excess > 0) {
             payable(msg.sender).transfer(excess); // Refund excess native token
         }
+
+        emit PlaysBought(msg.sender, gameNumber, numPlays);
     }
 
     function choicesHash(
@@ -280,6 +294,8 @@ contract ZigZagZog is EIP712 {
         } else {
             GameState[gameNumber + 1].gameTimestamp = 0;
         }
+
+        emit PlayerReveal(msg.sender, gameNumber, roundNumber, numCircles, numSquares, numTriangles);
     }
 
     function claimWinnings(uint256 gameNumber) external {
@@ -320,6 +336,8 @@ contract ZigZagZog is EIP712 {
                 / survivingPlays[gameNumber]
         ) >> 64;
         payable(msg.sender).transfer(payoutAmount);
+
+        emit WinningsClaimed(msg.sender, gameNumber, game.roundNumber, payoutAmount);
     }
 
     function hasGameEnded(uint256 gameNumber) external view returns (bool) {
@@ -327,6 +345,14 @@ contract ZigZagZog is EIP712 {
         Game memory game = GameState[gameNumber];
 
         return _willGameEnd(gameNumber, game.roundNumber);
+    }
+
+    function getRoundOutcome(uint256 gameNumber, uint256 roundNumber) public view returns (EliminationResult) {
+        return _calculateEliminationResult(
+            circlesRevealed[gameNumber][roundNumber],
+            squaredRevealed[gameNumber][roundNumber],
+            trianglesRevealed[gameNumber][roundNumber]
+        );
     }
 
     function _willGameEnd(uint256 gameNumber, uint256 roundNumber) internal view returns (bool) {
