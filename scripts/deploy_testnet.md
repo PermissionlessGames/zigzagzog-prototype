@@ -10,6 +10,7 @@
 	export PLAYER_KEY=~/.brownie/accounts/wampleek.json
 	export EXECUTOR=0x9ed191DB1829371F116Deb9748c26B49467a592A
 	export PLAYER=0x5270Be273265f6F8ab034dF137FF82fc1E468F88
+	export G7_TESTNET_API=https://testnet.game7.io/api
     ```
 
  ## Deploy contracts
@@ -23,5 +24,8 @@
 			--reveal-duration 120 \
 			--rpc $RPC \
 			--keyfile $EXECUTOR_KEY \
-			--password $PASSWORD
+			--password $PASSWORD \
+			--verify \
+			--api $G7_TESTNET_API \
+			--api-key $BLOCKSCOUT_API_KEY
     ```
