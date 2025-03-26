@@ -362,6 +362,12 @@ contract ZigZagZog is EIP712 {
         if (circles + squares + triangles == 0) {
             return true;
         }
+        if (
+            circlePlayerCount[gameNumber][roundNumber] + squarePlayerCount[gameNumber][roundNumber]
+                + trianglePlayerCount[gameNumber][roundNumber] == 1
+        ) {
+            return true;
+        }
 
         EliminationResult elimResult = _calculateEliminationResult(circles, squares, triangles);
 
