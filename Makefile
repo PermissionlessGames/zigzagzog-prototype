@@ -37,7 +37,8 @@ bindings/ZigZagZog/ZigZagZog.go: build-contracts
 		--foundry out/ZigZagZog.sol/ZigZagZog.json \
 		--package zigzagzog \
 		--struct ZigZagZog \
-		--output bindings/zigzagzog/ZigZagZog.go
+		--output bindings/zigzagzog/ZigZagZog.go \
+		--source-code src/ZigZagZog.sol
 
 bind: bindings/ZigZagZog/ZigZagZog.go
 
