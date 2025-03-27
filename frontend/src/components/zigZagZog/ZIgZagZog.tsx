@@ -23,12 +23,12 @@ import RulesModal from "./RulesModal";
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x487a366Ed27F5F7D6ed1756B8972B23793Ce6B1d' 0 0 10 vs 0 0 10
 //export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01' //NEW
-export const ZIG_ZAG_ZOG_ADDRESS = '0x389A72713301833517b99c64C7E7e37442b47067'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x389A72713301833517b99c64C7E7e37442b47067'
 
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x781B0309c24e6D3352952337D09114a327253750'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x4135bB78BC18b13FA39d0a156ca3524Ee3881665'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
-
+export const ZIG_ZAG_ZOG_ADDRESS = '0x91E5597cac8C69Ff54EF9BB22D7d65c06e36ABeb'
 
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
@@ -62,7 +62,7 @@ const ZigZagZog = () => {
             }
             const gameToBuyIn = currentGameAndRoundState.data.hasGameEnded ? Number(currentGameNumber.data) + 1 : Number(currentGameNumber.data)
             // const gameToBuyIn = Number(currentGameNumber.data) + 1
-            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(3000), _client, BigInt(gameToBuyIn))
+            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
             return hash
         },
         onSuccess: async () => {
