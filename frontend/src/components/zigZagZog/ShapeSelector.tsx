@@ -12,6 +12,7 @@ const ShapeSelector = ({playsCount, selected, onSelect, isCommitPhase}: {playsCo
     
     const getStrokeColor = (count: bigint) => {
         if (count === BigInt(0)) return 'gray';
+        if (playsCount === 1) return 'hsl(121, 62.60%, 48.20%)';
         const hue = 80 - (Number(count) - 1) / (playsCount - 1) * 60;
         const saturation = Math.max(10, (Number(count) - 1) / (playsCount - 1) * 100);
         return `hsl(${hue}, ${saturation}%, 50%)`;

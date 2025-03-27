@@ -27,3 +27,7 @@
     justify-content: space-between;
     gap: 10px;
 }
+
+.rulesButton {
+    cursor: pointer;
+}
