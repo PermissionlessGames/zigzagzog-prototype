@@ -15,13 +15,19 @@ import ShapeSelector from "./ShapeSelector";
 import { canClaim, getRounds, getShareInfo } from "../../utils/playerState";
 import Navbar from "./Navbar";
 import Rounds from "./Rounds";
+import RulesModal from "./RulesModal";
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc193Dc413358067B4D15fF20b50b59A9421eD1CD'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xA05C355eD4EbA9f20E43CCc018AD041E5E3BEa13'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc2dc3596f6194dBBc3f9c2fB9Cc1547F4A92aa76' stuck because one player plays one shape
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xD0DD649939D4d6C5D0B4b15eDdF9dF4EE48eEC2F' 1 1 0 vs 0 1 1 stuck because commit and buyPlays define differently what ended game is
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x487a366Ed27F5F7D6ed1756B8972B23793Ce6B1d' 0 0 10 vs 0 0 10
-export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
-// export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01'
+//export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01' NEW
+
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x781B0309c24e6D3352952337D09114a327253750'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x4135bB78BC18b13FA39d0a156ca3524Ee3881665'
+export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
+
 
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
@@ -29,6 +35,7 @@ const ZigZagZog = () => {
     const client = createThirdwebClient({ clientId: thirdwebClientId });
     const [commitment, setCommitment] = useState<Commitment | undefined>(undefined)
     const [selected, setSelected] = useState<ShapeSelection>({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
+    const [showRules, setShowRules] = useState(true);
 
     useEffect(() => {
         if (!activeAccount) {
@@ -289,7 +296,14 @@ const ZigZagZog = () => {
 
     return (
         <div className={styles.container}>
-            <Navbar gameNumber={Number(currentGameNumber.data ?? 0)} phase={currentGameAndRoundState.data?.isCommitPhase ? 'Commit' : currentGameAndRoundState.data?.isRevealPhase ? 'Reveal' : 'Idle'} timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} potSize={playerState.data?.shareInfo.gameBalance ?? 0}/>
+            <Navbar 
+                gameNumber={Number(currentGameNumber.data ?? 0)} 
+                phase={currentGameAndRoundState.data?.isCommitPhase ? 'Commit' : currentGameAndRoundState.data?.isRevealPhase ? 'Reveal' : 'Idle'} 
+                timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} 
+                potSize={playerState.data?.shareInfo.gameBalance ?? 0}
+                onRulesClick={() => setShowRules(true)}
+            />
+            <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
             <div className={styles.hStack}>
                 <div className={styles.vStack}>
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
