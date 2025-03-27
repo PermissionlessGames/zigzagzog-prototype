@@ -816,4 +816,37 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
 
         assertEq(players[2].balance, initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 2);
     }
+
+    function test_claim_two_plays_remaining() public {
+        uint256 roundNumber = 1;
+
+        playerShapes[players[0]] = [1, 0, 11];
+        playerShapes[players[1]] = [0, 1, 8];
+        playerShapes[players[2]] = [0, 0, 15];
+
+        _playRound(roundNumber);
+
+        assertTrue(game.hasGameEnded(gameNumber));
+
+        vm.prank(players[0]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[0], gameNumber, roundNumber, pot / 2);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[1]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[1], gameNumber, roundNumber, pot / 2);
+        game.claimWinnings(gameNumber);
+
+        vm.prank(players[2]);
+        vm.expectEmit();
+        emit WinningsClaimed(players[2], gameNumber, roundNumber, 0);
+        game.claimWinnings(gameNumber);
+
+        assertEq(players[0].balance, initialBalances[players[0]] - buyinAmounts[players[0]] + pot / 2);
+
+        assertEq(players[1].balance, initialBalances[players[1]] - buyinAmounts[players[1]] + pot / 2);
+
+        assertEq(players[2].balance, initialBalances[players[2]] - buyinAmounts[players[2]]);
+    }
 }
