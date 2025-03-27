@@ -359,9 +359,6 @@ contract ZigZagZog is EIP712 {
         uint256 circles = circlesRevealed[gameNumber][roundNumber];
         uint256 squares = squaredRevealed[gameNumber][roundNumber];
         uint256 triangles = trianglesRevealed[gameNumber][roundNumber];
-        if (circles + squares + triangles == 0) {
-            return true;
-        }
         if (
             circlePlayerCount[gameNumber][roundNumber] + squarePlayerCount[gameNumber][roundNumber]
                 + trianglePlayerCount[gameNumber][roundNumber] == 1
@@ -373,6 +370,9 @@ contract ZigZagZog is EIP712 {
 
         uint256 rawCountRemaining;
         if (elimResult == EliminationResult.CircleEliminated) {
+            if (squares + triangles <= 2) {
+                return true;
+            }
             rawCountRemaining =
                 squarePlayerCount[gameNumber][roundNumber] + trianglePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
@@ -383,6 +383,9 @@ contract ZigZagZog is EIP712 {
                 return false;
             }
         } else if (elimResult == EliminationResult.SquareEliminated) {
+            if (circles + triangles <= 2) {
+                return true;
+            }
             rawCountRemaining =
                 circlePlayerCount[gameNumber][roundNumber] + trianglePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
@@ -393,6 +396,9 @@ contract ZigZagZog is EIP712 {
                 return false;
             }
         } else if (elimResult == EliminationResult.TriangleEliminated) {
+            if (circles + squares <= 2) {
+                return true;
+            }
             rawCountRemaining = circlePlayerCount[gameNumber][roundNumber] + squarePlayerCount[gameNumber][roundNumber];
             if (rawCountRemaining == 1) {
                 return true;
