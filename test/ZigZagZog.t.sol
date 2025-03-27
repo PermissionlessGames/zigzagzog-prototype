@@ -817,7 +817,7 @@ contract ZigZagZogTest_multiplayer is ZigZagZogTestBase {
         assertEq(players[2].balance, initialBalances[players[2]] - buyinAmounts[players[2]] + pot / 2);
     }
 
-    function test_claims_two_plays_remaining() public {
+    function test_claim_two_plays_remaining() public {
         uint256 roundNumber = 1;
 
         playerShapes[players[0]] = [1, 0, 11];
