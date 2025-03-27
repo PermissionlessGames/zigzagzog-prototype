@@ -62,7 +62,7 @@ const ZigZagZog = () => {
             }
             const gameToBuyIn = currentGameAndRoundState.data.hasGameEnded ? Number(currentGameNumber.data) + 1 : Number(currentGameNumber.data)
             // const gameToBuyIn = Number(currentGameNumber.data) + 1
-            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(3000), _client, BigInt(gameToBuyIn))
+            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
             return hash
         },
         onSuccess: async () => {
