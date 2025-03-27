@@ -5,7 +5,7 @@ import { wagmiConfig } from "../../config";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from 'react';
 
-const Navbar = ({phase, timeLeft, potSize}: {phase: string, timeLeft: number, potSize: number}) => {
+const Navbar = ({phase, timeLeft, potSize, gameNumber}: {phase: string, timeLeft: number, potSize: number, gameNumber: number}) => {
     const [_timeLeft, setTimeLeft] = useState(Math.floor(timeLeft / 1000))
 
     useEffect(() => {
@@ -38,6 +38,9 @@ const Navbar = ({phase, timeLeft, potSize}: {phase: string, timeLeft: number, po
     return (
         <div className={styles.container}>
             <div className={styles.leftSide}>
+                <div className={styles.item}>
+                    <span>{`Game: ${gameNumber}`}</span>
+                </div>
                 <div className={styles.item}>
                     <span>{`Pot Size: ${potSize}`}</span>
                 </div>
