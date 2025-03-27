@@ -20,8 +20,8 @@ import Rounds from "./Rounds";
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc2dc3596f6194dBBc3f9c2fB9Cc1547F4A92aa76' stuck because one player plays one shape
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xD0DD649939D4d6C5D0B4b15eDdF9dF4EE48eEC2F' 1 1 0 vs 0 1 1 stuck because commit and buyPlays define differently what ended game is
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x487a366Ed27F5F7D6ed1756B8972B23793Ce6B1d' 0 0 10 vs 0 0 10
-export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
-
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
+export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01'
 
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
