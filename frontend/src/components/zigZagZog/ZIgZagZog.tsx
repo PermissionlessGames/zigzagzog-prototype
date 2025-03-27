@@ -289,7 +289,7 @@ const ZigZagZog = () => {
 
     return (
         <div className={styles.container}>
-            <Navbar phase={currentGameAndRoundState.data?.isCommitPhase ? 'Commit' : currentGameAndRoundState.data?.isRevealPhase ? 'Reveal' : 'Idle'} timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} />
+            <Navbar phase={currentGameAndRoundState.data?.isCommitPhase ? 'Commit' : currentGameAndRoundState.data?.isRevealPhase ? 'Reveal' : 'Idle'} timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} potSize={playerState.data?.shareInfo.gameBalance ?? 0}/>
             <div className={styles.hStack}>
                 <div className={styles.vStack}>
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
