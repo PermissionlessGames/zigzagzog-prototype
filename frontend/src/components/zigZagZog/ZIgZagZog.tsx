@@ -22,11 +22,12 @@ import RulesModal from "./RulesModal";
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xD0DD649939D4d6C5D0B4b15eDdF9dF4EE48eEC2F' 1 1 0 vs 0 1 1 stuck because commit and buyPlays define differently what ended game is
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x487a366Ed27F5F7D6ed1756B8972B23793Ce6B1d' 0 0 10 vs 0 0 10
 //export const ZIG_ZAG_ZOG_ADDRESS = '0x8EC5D6c9E1E1a4172BAe81660Da4ae2Ae8DE42bc'
-// export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01' NEW
+// export const ZIG_ZAG_ZOG_ADDRESS = '0xD1593986bAf847B01E1B29d7F9eF45283438Ca01' //NEW
+export const ZIG_ZAG_ZOG_ADDRESS = '0x389A72713301833517b99c64C7E7e37442b47067'
 
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x781B0309c24e6D3352952337D09114a327253750'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x4135bB78BC18b13FA39d0a156ca3524Ee3881665'
-export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
 
 
 const ZigZagZog = () => {
@@ -233,29 +234,6 @@ const ZigZagZog = () => {
         }
     })
 
-
-    // useEffect(() => {
-    //     console.log("Game state and constants UE")
-    //     console.log(gameState.data, gameConstants.data)
-    //     const interval = setInterval(() => {
-    //         if (gameState.data && gameConstants.data) {
-    //             const commitDeadline = gameState.data.parsedState.roundTimestamp + gameConstants.data.commitDuration
-    //             const now = Date.now()
-    //             const remainingTime = commitDeadline - now
-    //             const isCommitPhase = remainingTime > (0)
-    //             const isRevealPhase = remainingTime < (0) && remainingTime > -gameConstants.data.revealDuration
-    //             const timeLeft = Math.max(isCommitPhase ? remainingTime : isRevealPhase ? remainingTime + gameConstants.data.revealDuration : 0)
-    //             setIsCommitPhase(isCommitPhase)
-    //             setIsRevealPhase(isRevealPhase)
-    //             setTimeLeft(Number(timeLeft))
-    //         }
-    //     }, 1000)
-    //     return () => clearInterval(interval)
-    // }, [gameState.data, gameConstants.data])
-
-    // useEffect(() => {
-    //     console.log(playerState.data)
-    // }, [playerState.data])
 
 
     useEffect(() => {
