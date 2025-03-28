@@ -8,7 +8,7 @@ import { Chain, createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
-import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices, revealChoicesTW } from "../../utils/zigZagZog";
+import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoicesTW } from "../../utils/zigZagZog";
 import { commitChoices } from "../../utils/signing";
 import { ShapeSelection } from "../../utils/signing";
 import ShapeSelector from "./ShapeSelector";
