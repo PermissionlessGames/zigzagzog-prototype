@@ -46,7 +46,6 @@ export const getGameState = async (contractAddress: string, gameNumber: bigint, 
     export const parseGameState = (result: any[], gameNumber: bigint): GameState => {
         const results = result.map((r) => r.result);
         const [gameState, hasGameEnded, hasPlayerCashedOut] = results;
-    console.log('parsing')
       return {
         gameNumber: gameNumber.toString(),
         gameTimestamp: Number(gameState[0]) * (1000),
