@@ -1,10 +1,10 @@
 import styles from "./ZigZagZog.module.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createWalletClient, custom, WalletClient } from "viem";
-import { thirdwebClientId, viemG7Testnet } from "../../config";
-import { useActiveAccount, useConnectModal } from 'thirdweb/react';
+import { thirdwebClientId, thirdWebG7Testnet, viemG7Testnet, wagmiConfig } from "../../config";
+import { useActiveAccount, useActiveWalletChain, useConnectModal, useSwitchActiveWalletChain } from 'thirdweb/react';
 import { useEffect, useState } from "react";
-import { createThirdwebClient } from "thirdweb";
+import { Chain, createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
@@ -16,6 +16,8 @@ import { canClaim, getRounds, getShareInfo } from "../../utils/playerState";
 import Navbar from "./Navbar";
 import Rounds from "./Rounds";
 import RulesModal from "./RulesModal";
+import { getBalance } from '@wagmi/core';
+
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc193Dc413358067B4D15fF20b50b59A9421eD1CD'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xA05C355eD4EbA9f20E43CCc018AD041E5E3BEa13'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc2dc3596f6194dBBc3f9c2fB9Cc1547F4A92aa76' stuck because one player plays one shape
@@ -33,10 +35,23 @@ export const ZIG_ZAG_ZOG_ADDRESS = '0x91E5597cac8C69Ff54EF9BB22D7d65c06e36ABeb'
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
     const { connect } = useConnectModal();
+    const switchChain = useSwitchActiveWalletChain();
+
     const client = createThirdwebClient({ clientId: thirdwebClientId });
     const [commitment, setCommitment] = useState<Commitment | undefined>(undefined)
     const [selected, setSelected] = useState<ShapeSelection>({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
     const [showRules, setShowRules] = useState(true);
+    const activeChain = useActiveWalletChain();
+
+
+
+
+    const balance = useQuery({
+        queryKey: ['balance', activeAccount?.address],
+        queryFn: () => getBalance(wagmiConfig, {address: activeAccount?.address ?? ''}),
+        refetchOnWindowFocus: true,
+        refetchInterval: 3000,
+    })
 
     useEffect(() => {
         if (!activeAccount) {
@@ -44,11 +59,22 @@ const ZigZagZog = () => {
         }
       }, [activeAccount, connect, client]);
 
+    useEffect(() => {
+        if (activeAccount && activeChain?.id !== thirdWebG7Testnet.id) {
+            switchChain({...thirdWebG7Testnet, testnet: true})
+        }
+    }, [activeAccount, activeChain])
+
     const buyPlaysMutation = useMutation({
-        mutationFn: async ({version}: {version: number}) => {
-            if (!currentGameState.data || !activeAccount?.address || !currentGameNumber.data || !currentGameAndRoundState.data) {
+        mutationFn: async ({version, activeChain}: {version: number, activeChain: Chain | undefined}) => {
+            if (!currentGameState.data || !activeAccount?.address || !currentGameNumber.data || !currentGameAndRoundState.data || !activeChain) {
                 return
             }
+            
+            if (activeChain?.id !== thirdWebG7Testnet.id) {
+                await switchChain({...thirdWebG7Testnet, testnet: true})
+            }
+
             let _client: WalletClient | undefined;
             if (window.ethereum && activeAccount?.address) {
                 _client = createWalletClient({
@@ -62,6 +88,8 @@ const ZigZagZog = () => {
             }
             const gameToBuyIn = currentGameAndRoundState.data.hasGameEnded ? Number(currentGameNumber.data) + 1 : Number(currentGameNumber.data)
             let hash;
+
+            
             if (version === 1) {
                 hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
             } else {
@@ -257,16 +285,21 @@ const ZigZagZog = () => {
                 timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} 
                 potSize={playerState.data?.shareInfo.gameBalance ?? 0}
                 onRulesClick={() => setShowRules(true)}
+                balance={balance.data?.formatted}
             />
             <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
             <div className={styles.hStack}>
                 <div className={styles.vStack}>
+
+                    {balance.data?.value && balance.data.value > BigInt(0) ? (<>
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
-                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 1})}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays v1'}</div>
+                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 1, activeChain})}>{buyPlaysMutation.isPending && buyPlaysMutation.variables?.version === 1 ? 'Buying...' : 'Buy Plays v1'}</div>
                     )}
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
-                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 2})}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays v2'}</div>
-                    )}
+                            <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 2, activeChain})}>{buyPlaysMutation.isPending && buyPlaysMutation.variables?.version === 2 ? 'Buying...' : 'Buy Plays v2'}</div>
+                        )}
+                    </>): (<div className={styles.buyButton} onClick={() => window.open(`https://getsome.game7.io?network=testnet&address=${activeAccount?.address}`, "_blank")}>getsome tokens</div>)}
+
 
                     {playerState.data?.survivingPlays !== undefined && playerState.data.survivingPlays > 0 && !currentGameAndRoundState.data?.hasGameEnded && (
                         <ShapeSelector selected={selected} 
