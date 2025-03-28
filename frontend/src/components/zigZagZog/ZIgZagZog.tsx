@@ -49,7 +49,7 @@ const ZigZagZog = () => {
     const balance = useQuery({
         queryKey: ['balance', activeAccount?.address],
         queryFn: () => getBalance(wagmiConfig, {address: activeAccount?.address ?? ''}),
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: 'always',
         refetchInterval: 3000,
     })
 
@@ -154,7 +154,7 @@ const ZigZagZog = () => {
             return state
         },
         enabled: gameConstants.data !== undefined && activeAccount?.address !== undefined && currentGameNumber.data !== undefined,
-        refetchInterval: 10000,
+        refetchInterval: 3000,
     })
     
 
