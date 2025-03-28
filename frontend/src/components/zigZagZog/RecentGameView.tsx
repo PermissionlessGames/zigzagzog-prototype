@@ -13,9 +13,7 @@ const RecentGameView = ({game, player}: {game: {gameNumber: string, plays: strin
     const rounds = useQuery({
         queryKey: ["rounds", game.gameNumber],
         queryFn: async () => {
-            console.log('Game', game.gameNumber, 'roundNumber', game.roundNumber)
             const rounds = await getRounds(ZIG_ZAG_ZOG_ADDRESS, game.gameNumber, BigInt(game.roundNumber), player)
-            console.log('Game', game.gameNumber, 'rounds', rounds)
             return rounds
         }
     })

@@ -25,7 +25,6 @@ const ShapeSelector = ({playsCount, selected, onSelect, isCommitPhase}: {playsCo
     }, [playsCount])
 
     const handleShapeClick = (shape: keyof ShapeSelection, d: number) => {
-        console.log(selected)
         if (!isCommitPhase) {
             return
         }

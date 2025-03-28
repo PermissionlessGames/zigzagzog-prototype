@@ -238,6 +238,5 @@ export const getRoundRevealState = async (contractAddress: string, gameNumber: s
 }
 
 export const canClaim = (rounds: RoundState[], gameState: GameState, gameAndRoundState: GameAndRoundState) => {
-    console.log(gameAndRoundState.hasGameEnded, rounds[Number(gameState.roundNumber) - 1].playerRevealed, rounds[Number(gameState.roundNumber) - 1].survivingPlays > 0)
     return gameAndRoundState.hasGameEnded && rounds[Number(gameState.roundNumber) - 1].playerRevealed && rounds[Number(gameState.roundNumber) - 1].survivingPlays > 0
 }

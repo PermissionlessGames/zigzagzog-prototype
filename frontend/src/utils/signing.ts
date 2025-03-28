@@ -12,7 +12,6 @@ export interface ShapeSelection {
 
 export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint, gameNumber: bigint, client: WalletClient) => {
 
-    console.log("Commiting choices", shapes, gameNumber, roundNumber)
     if (!client.account) {
         throw new Error("No account provided");
     }
@@ -62,7 +61,6 @@ export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint,
         }
       };
       
-      console.log('Signing typed data:', JSON.stringify(typedData, null, 2));
       
       // Sign using eth_signTypedData_v4 for EIP-712 compatibility
       const ethereum = window.ethereum;
@@ -76,12 +74,11 @@ export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint,
       });
       
       
-      console.log('Signed message:', signedMessage);
 
       try {
 
 
-        const hash = await client.writeContract({
+        await client.writeContract({
             account: client.account,
             address: ZIG_ZAG_ZOG_ADDRESS,
             abi: zigZagZogABI,
@@ -90,7 +87,6 @@ export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint,
             chain: g7Testnet,
           })
 
-        console.log('Hash:', hash);
         
         // Store shapes and nonce for later reveal
         // localStorage.setItem(`commitment_${ZIG_ZAG_ZOG_ADDRESS}_${client.account.address}_${gameNumber}_${roundNumber}`, JSON.stringify({

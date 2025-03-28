@@ -1,14 +1,14 @@
 import styles from "./ZigZagZog.module.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createWalletClient, custom, WalletClient } from "viem";
-import { thirdwebClientId, viemG7Testnet } from "../../config";
-import { useActiveAccount, useConnectModal } from 'thirdweb/react';
+import { thirdwebClientId, thirdWebG7Testnet, viemG7Testnet, wagmiConfig } from "../../config";
+import { useActiveAccount, useActiveWalletChain, useConnectModal, useSwitchActiveWalletChain } from 'thirdweb/react';
 import { useEffect, useState } from "react";
-import { createThirdwebClient } from "thirdweb";
+import { Chain, createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
-import { buyPlays, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
+import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
 import { commitChoices } from "../../utils/signing";
 import { ShapeSelection } from "../../utils/signing";
 import ShapeSelector from "./ShapeSelector";
@@ -16,6 +16,8 @@ import { canClaim, getRounds, getShareInfo } from "../../utils/playerState";
 import Navbar from "./Navbar";
 import Rounds from "./Rounds";
 import RulesModal from "./RulesModal";
+import { getBalance } from '@wagmi/core';
+
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc193Dc413358067B4D15fF20b50b59A9421eD1CD'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xA05C355eD4EbA9f20E43CCc018AD041E5E3BEa13'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc2dc3596f6194dBBc3f9c2fB9Cc1547F4A92aa76' stuck because one player plays one shape
@@ -33,10 +35,23 @@ export const ZIG_ZAG_ZOG_ADDRESS = '0x91E5597cac8C69Ff54EF9BB22D7d65c06e36ABeb'
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
     const { connect } = useConnectModal();
+    const switchChain = useSwitchActiveWalletChain();
+
     const client = createThirdwebClient({ clientId: thirdwebClientId });
     const [commitment, setCommitment] = useState<Commitment | undefined>(undefined)
     const [selected, setSelected] = useState<ShapeSelection>({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
     const [showRules, setShowRules] = useState(true);
+    const activeChain = useActiveWalletChain();
+
+
+
+
+    const balance = useQuery({
+        queryKey: ['balance', activeAccount?.address],
+        queryFn: () => getBalance(wagmiConfig, {address: activeAccount?.address ?? ''}),
+        refetchOnWindowFocus: true,
+        refetchInterval: 3000,
+    })
 
     useEffect(() => {
         if (!activeAccount) {
@@ -44,11 +59,22 @@ const ZigZagZog = () => {
         }
       }, [activeAccount, connect, client]);
 
+    useEffect(() => {
+        if (activeAccount && activeChain?.id !== thirdWebG7Testnet.id) {
+            switchChain({...thirdWebG7Testnet, testnet: true})
+        }
+    }, [activeAccount, activeChain])
+
     const buyPlaysMutation = useMutation({
-        mutationFn: async () => {
-            if (!currentGameState.data || !activeAccount?.address || !currentGameNumber.data || !currentGameAndRoundState.data) {
+        mutationFn: async ({version, activeChain}: {version: number, activeChain: Chain | undefined}) => {
+            if (!currentGameState.data || !activeAccount?.address || !currentGameNumber.data || !currentGameAndRoundState.data || !activeChain) {
                 return
             }
+            
+            if (activeChain?.id !== thirdWebG7Testnet.id) {
+                await switchChain({...thirdWebG7Testnet, testnet: true})
+            }
+
             let _client: WalletClient | undefined;
             if (window.ethereum && activeAccount?.address) {
                 _client = createWalletClient({
@@ -61,15 +87,20 @@ const ZigZagZog = () => {
                 throw new Error("No client found");
             }
             const gameToBuyIn = currentGameAndRoundState.data.hasGameEnded ? Number(currentGameNumber.data) + 1 : Number(currentGameNumber.data)
-            // const gameToBuyIn = Number(currentGameNumber.data) + 1
-            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
+            let hash;
+
+            
+            if (version === 1) {
+                hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
+            } else {
+                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn), client, activeAccount)
+            }
             return hash
         },
         onSuccess: async () => {
             await currentGameNumber.refetch()
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
@@ -119,7 +150,6 @@ const ZigZagZog = () => {
             }
             const gameState = await getGameState(ZIG_ZAG_ZOG_ADDRESS, BigInt(currentGameNumber.data), activeAccount.address)
             const state = await getGameAndRoundState(ZIG_ZAG_ZOG_ADDRESS, gameState, gameConstants.data, activeAccount?.address)
-            console.log('state', state)
             queryClient.invalidateQueries({queryKey: ["playerState"]})
             return state
         },
@@ -127,19 +157,6 @@ const ZigZagZog = () => {
         refetchInterval: 10000,
     })
     
-
-
-    useEffect(() => {
-        console.log('currentGameAndRoundState', currentGameAndRoundState.data)
-    }, [currentGameAndRoundState.data])
-
-
-
-    useEffect(() => {
-        if (currentGameNumber.data && currentGameAndRoundState.data?.activeRound) {
-            // setSelected({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
-        }
-    }, [currentGameNumber.data, currentGameAndRoundState.data?.activeRound])
 
     const playerState = useQuery({
         queryKey: ["playerState", currentGameNumber.data, activeAccount?.address],
@@ -158,8 +175,6 @@ const ZigZagZog = () => {
             const survivingPlays = activeRound > 1 ? rounds[activeRound - 1 - 1].survivingPlays : shareInfo.purchasedPlays //1-based index
             const hasCommitted = rounds[activeRound - 1].playerCommitted
             const hasRevealed = rounds[activeRound - 1].playerRevealed
-            // console.log('hasPlayerCashedOut', currentGameState.data?.hasPlayerCashedOut)
-            // console.log('canClaim', currentGameAndRoundState.data.hasGameEnded, rounds[Number(currentGameState.data?.roundNumber) - 1].playerRevealed, rounds[Number(currentGameState.data?.gameNumber) - 1].survivingPlays > 0)
             let playerCanClaim = false
             try {
                 playerCanClaim = (currentGameState.data && currentGameAndRoundState.data && !currentGameState.data.hasPlayerCashedOut) ? canClaim(rounds, currentGameState.data, currentGameAndRoundState.data) : false
@@ -182,9 +197,7 @@ const ZigZagZog = () => {
             }
 
             let _client: WalletClient | undefined;
-            console.log("Active account", activeAccount, window.ethereum)
             if (window.ethereum && activeAccount?.address) {
-                console.log("Creating client")
                 _client = createWalletClient({
                     account: activeAccount.address,
                     chain: viemG7Testnet,
@@ -199,17 +212,14 @@ const ZigZagZog = () => {
             return result
         },
         onSuccess: async (result: any) => {
-            console.log("Commitment", result)
             setCommitment(result)
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
     const revealChoicesMutation = useMutation({
         mutationFn: async () => {
-            console.log("Revealing choices", commitment)
             if (!commitment) {
                 return
             }
@@ -230,15 +240,10 @@ const ZigZagZog = () => {
         onSuccess: async () => {
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
 
-
-    useEffect(() => {
-        console.log({playerState: playerState.data, currentGameAndRoundState: currentGameAndRoundState.data, currentGameState: currentGameState.data})
-    }, [playerState.data, currentGameAndRoundState.data, currentGameState.data])
 
     const claimWinningMutation = useMutation({
         mutationFn: async () => {
@@ -280,13 +285,21 @@ const ZigZagZog = () => {
                 timeLeft={currentGameAndRoundState.data?.timeLeft ?? 0} 
                 potSize={playerState.data?.shareInfo.gameBalance ?? 0}
                 onRulesClick={() => setShowRules(true)}
+                balance={balance.data?.formatted}
             />
             <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
             <div className={styles.hStack}>
                 <div className={styles.vStack}>
+
+                    {balance.data?.value && balance.data.value > BigInt(0) ? (<>
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
-                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate()}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays'}</div>
+                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 1, activeChain})}>{buyPlaysMutation.isPending && buyPlaysMutation.variables?.version === 1 ? 'Buying...' : 'Buy Plays v1'}</div>
                     )}
+                    {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
+                            <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 2, activeChain})}>{buyPlaysMutation.isPending && buyPlaysMutation.variables?.version === 2 ? 'Buying...' : 'Buy Plays v2'}</div>
+                        )}
+                    </>): (<div className={styles.buyButton} onClick={() => window.open(`https://getsome.game7.io?network=testnet&address=${activeAccount?.address}`, "_blank")}>getsome tokens</div>)}
+
 
                     {playerState.data?.survivingPlays !== undefined && playerState.data.survivingPlays > 0 && !currentGameAndRoundState.data?.hasGameEnded && (
                         <ShapeSelector selected={selected} 
@@ -317,10 +330,6 @@ const ZigZagZog = () => {
                     </div>
 
                 </div>
-                {/* <div className={styles.vStack}>
-                    <button onClick={() => buyPlaysMutation.mutate()}>Buy Plays</button>
-                    
-                    </div> */}
             </div>
             <Rounds 
                 rounds={playerState.data?.rounds && currentGameAndRoundState.data?.activeRound ? playerState.data?.rounds.slice(0, currentGameAndRoundState.data?.activeRound - (currentGameAndRoundState.data?.hasGameEnded ? 0 : 1)) : []} 

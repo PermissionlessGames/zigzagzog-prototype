@@ -1,9 +1,13 @@
 import { zigZagZogABI } from '../ABIs/ZigZagZog.abi.ts';
 import { WalletClient } from 'viem';
-import { g7Testnet, wagmiConfig } from '../config';
+import { g7Testnet, viemG7Testnet, wagmiConfig } from '../config';
 import { getPublicClient } from '@wagmi/core';
 import { multicall } from '@wagmi/core';
 import { ShapeSelection } from './signing.ts';
+import { prepareContractCall, ThirdwebClient, waitForReceipt, sendTransaction } from 'thirdweb';
+import { viemAdapter } from 'thirdweb/adapters/viem';
+import { Account } from 'thirdweb/wallets';
+
 
 
 
@@ -72,41 +76,74 @@ export interface GameConstants {
     }
 
 
-    // Helper function to get the current block number and calculate blocks remaining
-// Contract constants - loaded once and cached
-// let CONTRACT_CONSTANTS: {       
-//   playCost: bigint | null;
-//   commitDuration: bigint | null;
-//   revealDuration: bigint | null;
-//   version: string | null;
-// } = {
-//   playCost: null,
-//   commitDuration: null,
-//   revealDuration: null,
-//   version: null
-// };
-
 
 export const buyPlays = async (contractAddress: string, value: bigint, client: WalletClient, gameNumber: bigint) => {
-  console.log("Buying plays", gameNumber, contractAddress, value);
     const account = client.account;
     if (!account) {
       throw new Error("No account provided");
     }
 
-  
-  
-    const hash = await client.writeContract({
-      account,
-      address: contractAddress,
-      value,
-      abi: zigZagZogABI,
-      functionName: 'buyPlays',
-      args: [gameNumber],
-      chain: g7Testnet,
-    })
-    return hash
+      try {
+      const hash = await client.writeContract({
+        account,
+        address: contractAddress,
+        value,
+        abi: zigZagZogABI,
+        functionName: 'buyPlays',
+        args: [gameNumber],
+        chain: g7Testnet,
+      })
+      return hash
+    } catch (error) {
+      console.log(error)
+    }
 }
+
+export const buyPlaysTW = async (contractAddress: string, value: bigint, client: WalletClient, gameNumber: bigint, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
+    const account = client.account;
+    if (!account) {
+      throw new Error("No account provided");
+    }
+
+    const viemContract = {
+      address: contractAddress,
+      abi: zigZagZogABI,
+    } as const
+
+    const thirdwebContract = viemAdapter.contract.fromViem({
+      viemContract: viemContract,
+      chain: {
+        ...viemG7Testnet,
+        rpc: viemG7Testnet.rpcUrls["default"].http[0],
+        blockExplorers: [{
+          name: "Game7",
+          url: viemG7Testnet.blockExplorers.default.url
+        }],
+        testnet: true
+      },
+      client: thirdWebClient,
+    });
+
+    const tx = prepareContractCall({
+      contract: thirdwebContract,
+      method: "buyPlays",
+      value: value,
+      params: [gameNumber],
+    });
+
+    try { 
+      const transactionResult = await sendTransaction({
+        transaction: tx,
+        account: thirdWebAccount,
+      });
+      const receipt = await waitForReceipt(transactionResult);
+      return receipt
+    } catch (error) {
+      console.log(error)
+    }
+}
+
+
 
 
 export interface Commitment {
@@ -129,7 +166,6 @@ export const revealChoices = async (contractAddress: string, client: WalletClien
         commitment.shapes.squares,
         commitment.shapes.triangles
     ];
-    console.log("Revealing choices", args, contractAddress);
 
 
 
@@ -269,6 +305,5 @@ export const getRounds = async (contractAddress: string, gameNumber: string, las
   const result = await multicall(wagmiConfig, {
     contracts: calls
   })
-  console.log(result)
   return result
 }
