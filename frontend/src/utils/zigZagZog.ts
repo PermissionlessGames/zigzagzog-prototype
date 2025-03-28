@@ -78,7 +78,6 @@ export interface GameConstants {
 
 
 export const buyPlays = async (contractAddress: string, value: bigint, client: WalletClient, gameNumber: bigint) => {
-  console.log("Buying plays", gameNumber, contractAddress, value);
     const account = client.account;
     if (!account) {
       throw new Error("No account provided");
@@ -101,7 +100,6 @@ export const buyPlays = async (contractAddress: string, value: bigint, client: W
 }
 
 export const buyPlaysTW = async (contractAddress: string, value: bigint, client: WalletClient, gameNumber: bigint, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
-  console.log("Buying plays", gameNumber, contractAddress, value);
     const account = client.account;
     if (!account) {
       throw new Error("No account provided");
@@ -168,7 +166,6 @@ export const revealChoices = async (contractAddress: string, client: WalletClien
         commitment.shapes.squares,
         commitment.shapes.triangles
     ];
-    console.log("Revealing choices", args, contractAddress);
 
 
 
@@ -308,6 +305,5 @@ export const getRounds = async (contractAddress: string, gameNumber: string, las
   const result = await multicall(wagmiConfig, {
     contracts: calls
   })
-  console.log(result)
   return result
 }

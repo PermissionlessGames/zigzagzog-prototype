@@ -123,7 +123,6 @@ const ZigZagZog = () => {
             }
             const gameState = await getGameState(ZIG_ZAG_ZOG_ADDRESS, BigInt(currentGameNumber.data), activeAccount.address)
             const state = await getGameAndRoundState(ZIG_ZAG_ZOG_ADDRESS, gameState, gameConstants.data, activeAccount?.address)
-            console.log('state', state)
             queryClient.invalidateQueries({queryKey: ["playerState"]})
             return state
         },
@@ -133,9 +132,6 @@ const ZigZagZog = () => {
     
 
 
-    useEffect(() => {
-        console.log('currentGameAndRoundState', currentGameAndRoundState.data)
-    }, [currentGameAndRoundState.data])
 
 
 
@@ -162,8 +158,6 @@ const ZigZagZog = () => {
             const survivingPlays = activeRound > 1 ? rounds[activeRound - 1 - 1].survivingPlays : shareInfo.purchasedPlays //1-based index
             const hasCommitted = rounds[activeRound - 1].playerCommitted
             const hasRevealed = rounds[activeRound - 1].playerRevealed
-            // console.log('hasPlayerCashedOut', currentGameState.data?.hasPlayerCashedOut)
-            // console.log('canClaim', currentGameAndRoundState.data.hasGameEnded, rounds[Number(currentGameState.data?.roundNumber) - 1].playerRevealed, rounds[Number(currentGameState.data?.gameNumber) - 1].survivingPlays > 0)
             let playerCanClaim = false
             try {
                 playerCanClaim = (currentGameState.data && currentGameAndRoundState.data && !currentGameState.data.hasPlayerCashedOut) ? canClaim(rounds, currentGameState.data, currentGameAndRoundState.data) : false
@@ -186,9 +180,7 @@ const ZigZagZog = () => {
             }
 
             let _client: WalletClient | undefined;
-            console.log("Active account", activeAccount, window.ethereum)
             if (window.ethereum && activeAccount?.address) {
-                console.log("Creating client")
                 _client = createWalletClient({
                     account: activeAccount.address,
                     chain: viemG7Testnet,
@@ -203,17 +195,14 @@ const ZigZagZog = () => {
             return result
         },
         onSuccess: async (result: any) => {
-            console.log("Commitment", result)
             setCommitment(result)
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
     const revealChoicesMutation = useMutation({
         mutationFn: async () => {
-            console.log("Revealing choices", commitment)
             if (!commitment) {
                 return
             }
@@ -234,15 +223,10 @@ const ZigZagZog = () => {
         onSuccess: async () => {
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
 
-
-    useEffect(() => {
-        console.log({playerState: playerState.data, currentGameAndRoundState: currentGameAndRoundState.data, currentGameState: currentGameState.data})
-    }, [playerState.data, currentGameAndRoundState.data, currentGameState.data])
 
     const claimWinningMutation = useMutation({
         mutationFn: async () => {

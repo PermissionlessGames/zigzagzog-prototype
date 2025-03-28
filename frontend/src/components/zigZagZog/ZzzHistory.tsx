@@ -9,7 +9,6 @@ const ZzzHistory = ({player}: {player: string}) => {
         queryKey: ['playerRecentGames', player],
         queryFn: async () => { 
             const recentGames = await playerRecentGames(ZIG_ZAG_ZOG_ADDRESS, player)
-            console.log(recentGames)
             return recentGames.map((game) => ({
                 gameNumber: game.gameNumber.toString(),
                 plays: game.plays?.toString() ?? '',

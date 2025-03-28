@@ -84,7 +84,6 @@ export const calculateEliminationResult = ({
     }
   
     const elimResult = calculateEliminationResult({circlesRevealed: circles, squaresRevealed: squares, trianglesRevealed: triangles});
-    console.log('elimResult', elimResult)
   
     if (elimResult === EliminationResult.NothingEliminated) {
       return true;
@@ -140,12 +139,9 @@ export const calculateEliminationResult = ({
       rawCountRemaining = 
         roundState.circlePlayerCount +
         roundState.squarePlayerCount;
-      console.log('rawCountRemaining', rawCountRemaining)
       if (rawCountRemaining === 1) {
         return true;
       } else if (rawCountRemaining === 2) {
-        console.log('lastCircleRevealed', roundState.lastCircleRevealed)
-        console.log('lastSquareRevealed', roundState.lastSquareRevealed)
         return roundState.lastCircleRevealed ===
                roundState.lastSquareRevealed;
       }
@@ -156,15 +152,12 @@ export const calculateEliminationResult = ({
 
   export const _hasGameEnded = async (contractAddress: string, gameState: GameState, playerAddress: string): Promise<boolean> => {
     const roundRevealState = await getRoundRevealState(contractAddress, gameState.gameNumber, Number(gameState.roundNumber), playerAddress);
-    console.log('roundRevealState', roundRevealState)
     return willGameEnd(roundRevealState);
   }
 
   export const getGameAndRoundState = async (contractAddress: string, gameState: GameState, gameConstants: GameConstants, playerAddress: string): Promise<GameAndRoundState> => {
     const gameNumber = gameState.gameNumber;
-    // let hasGameEnded = gameState.hasGameEnded;
     let hasGameEnded = await _hasGameEnded(contractAddress, gameState, playerAddress);
-    console.log('hasGameEnded', hasGameEnded)
 
     const now = Date.now();
     if(now < gameState.roundTimestamp + gameConstants.commitDuration + gameConstants.revealDuration) {
