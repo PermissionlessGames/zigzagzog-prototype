@@ -73,7 +73,6 @@ const ZigZagZog = () => {
             await currentGameNumber.refetch()
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
         }
     })
 
@@ -130,16 +129,6 @@ const ZigZagZog = () => {
         refetchInterval: 10000,
     })
     
-
-
-
-
-
-    useEffect(() => {
-        if (currentGameNumber.data && currentGameAndRoundState.data?.activeRound) {
-            // setSelected({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
-        }
-    }, [currentGameNumber.data, currentGameAndRoundState.data?.activeRound])
 
     const playerState = useQuery({
         queryKey: ["playerState", currentGameNumber.data, activeAccount?.address],
@@ -308,10 +297,6 @@ const ZigZagZog = () => {
                     </div>
 
                 </div>
-                {/* <div className={styles.vStack}>
-                    <button onClick={() => buyPlaysMutation.mutate()}>Buy Plays</button>
-                    
-                    </div> */}
             </div>
             <Rounds 
                 rounds={playerState.data?.rounds && currentGameAndRoundState.data?.activeRound ? playerState.data?.rounds.slice(0, currentGameAndRoundState.data?.activeRound - (currentGameAndRoundState.data?.hasGameEnded ? 0 : 1)) : []} 
