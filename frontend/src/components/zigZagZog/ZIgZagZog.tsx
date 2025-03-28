@@ -8,7 +8,7 @@ import { createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
-import { buyPlays, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
+import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
 import { commitChoices } from "../../utils/signing";
 import { ShapeSelection } from "../../utils/signing";
 import ShapeSelector from "./ShapeSelector";
@@ -45,7 +45,7 @@ const ZigZagZog = () => {
       }, [activeAccount, connect, client]);
 
     const buyPlaysMutation = useMutation({
-        mutationFn: async () => {
+        mutationFn: async ({version}: {version: number}) => {
             if (!currentGameState.data || !activeAccount?.address || !currentGameNumber.data || !currentGameAndRoundState.data) {
                 return
             }
@@ -61,8 +61,12 @@ const ZigZagZog = () => {
                 throw new Error("No client found");
             }
             const gameToBuyIn = currentGameAndRoundState.data.hasGameEnded ? Number(currentGameNumber.data) + 1 : Number(currentGameNumber.data)
-            // const gameToBuyIn = Number(currentGameNumber.data) + 1
-            const hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
+            let hash;
+            if (version === 1) {
+                hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
+            } else {
+                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn), client, activeAccount)
+            }
             return hash
         },
         onSuccess: async () => {
@@ -285,7 +289,10 @@ const ZigZagZog = () => {
             <div className={styles.hStack}>
                 <div className={styles.vStack}>
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
-                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate()}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays'}</div>
+                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 1})}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays v1'}</div>
+                    )}
+                    {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
+                        <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 2})}>{buyPlaysMutation.isPending ? 'Buying...' : 'Buy Plays v2'}</div>
                     )}
 
                     {playerState.data?.survivingPlays !== undefined && playerState.data.survivingPlays > 0 && !currentGameAndRoundState.data?.hasGameEnded && (
