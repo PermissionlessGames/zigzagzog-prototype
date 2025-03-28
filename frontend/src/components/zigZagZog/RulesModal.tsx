@@ -21,6 +21,10 @@ const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
                     <li><strong>Win Together:</strong> The game ends when everyone plays the same shape, or when the last two shapes get the exact same number of plays. Everyone who survives shares the prize. Your share is based on how many of the winning shape you played in the final round.</li>
                     <li><strong>Shape Hierarchy:</strong> If there's a tie for the shape played the most times, circles always lose, and triangles beat squares.</li>
                 </ol>
+                <button className={styles.gotItButton} onClick={() => {
+                    localStorage.setItem('userGotRules', 'true')
+                    onClose()
+                }}>Got it!</button>
             </div>
         </div>
     );
