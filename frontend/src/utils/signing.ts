@@ -1,8 +1,10 @@
-import { g7Testnet, wagmiConfig } from "../config";
-import { zigZagZogABI } from "../ABIs/ZigZagZog.abi";
+import {  wagmiConfig } from "../config";
 import { ZIG_ZAG_ZOG_ADDRESS } from "../components/zigZagZog/ZIgZagZog";
 import { getPublicClient } from "@wagmi/core";
-import { WalletClient } from "viem";
+import { prepareContractCall, sendTransaction, waitForReceipt, ThirdwebClient } from "thirdweb";
+import { Account } from 'thirdweb/wallets';
+import { getThirdwebContract } from "./zigZagZog";
+
 
 export interface ShapeSelection {
     circles: bigint;
@@ -10,14 +12,8 @@ export interface ShapeSelection {
     triangles: bigint;
   }
 
-export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint, gameNumber: bigint, client: WalletClient) => {
-
-    if (!client.account) {
-        throw new Error("No account provided");
-    }
-
-    try {
-        const publicClient = getPublicClient(wagmiConfig);
+export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint, gameNumber: bigint, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
+      const publicClient = getPublicClient(wagmiConfig);
 
       // Generate a random nonce
       const nonce = Math.floor(Math.random() * 1000000);
@@ -70,26 +66,29 @@ export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint,
 
       const signedMessage = await ethereum.request({
         method: 'eth_signTypedData_v4',
-        params: [client.account.address, JSON.stringify(typedData)]
+        params: [thirdWebAccount.address, JSON.stringify(typedData)]
       });
       
+
+        const contract = getThirdwebContract(ZIG_ZAG_ZOG_ADDRESS, thirdWebClient)
+        const args: readonly [bigint, bigint, `0x${string}`] = [
+          gameNumber,
+          roundNumber,
+          signedMessage
+      ];
       
+        const tx = prepareContractCall({
+          contract,
+          method: "commitChoices",
+          params: args,
+        });
+      
+        const transactionResult = await sendTransaction({
+          transaction: tx,
+          account: thirdWebAccount,
+        });
+        waitForReceipt(transactionResult);      
 
-      try {
-
-
-        await client.writeContract({
-            account: client.account,
-            address: ZIG_ZAG_ZOG_ADDRESS,
-            abi: zigZagZogABI,
-            functionName: 'commitChoices',
-            args: [BigInt(gameNumber), BigInt(roundNumber), signedMessage],
-            chain: g7Testnet,
-          })
-
-        
-
-    
         
         return { 
           nonce: nonce,
@@ -97,34 +96,4 @@ export const commitChoices = async (shapes: ShapeSelection, roundNumber: bigint,
           gameNumber: gameNumber,
           roundNumber: roundNumber,
         };
-      } catch (error: any) {
-        // Check for specific error messages from the contract
-        const errorMessage = error.message || '';
-        
-        if (errorMessage.includes("ZigZagZog.commitChoices: game has ended")) {          
-          return { 
-            success: false, 
-            error: "Game has ended. Buy plays to start a new game." 
-          };
-        } else {
-          // Re-throw other errors to be caught by outer try/catch
-          throw error;
-        }
-      }
-    } catch (error) {
-      console.error("Error during commitment:", error);
-      const errorMessage = error instanceof Error ? error.message : "Commitment failed";
-      
-      // Check for specific error patterns in regular errors as well
-      if (typeof errorMessage === 'string' && 
-          (errorMessage.includes("game has ended") || 
-           errorMessage.includes("no remaining plays"))) {
-        return { 
-          success: false, 
-          error: "Game has ended. Buy plays to start a new game." 
-        };
-      }
-      
-      return { success: false, error: errorMessage };
-    }
   };

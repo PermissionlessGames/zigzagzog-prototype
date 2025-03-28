@@ -8,7 +8,7 @@ import { Chain, createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
-import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
+import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices, revealChoicesTW } from "../../utils/zigZagZog";
 import { commitChoices } from "../../utils/signing";
 import { ShapeSelection } from "../../utils/signing";
 import ShapeSelector from "./ShapeSelector";
@@ -30,8 +30,10 @@ import { getCommitmentKey } from "../../utils/localStorage";
 
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x781B0309c24e6D3352952337D09114a327253750'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x4135bB78BC18b13FA39d0a156ca3524Ee3881665'
-// export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A' //Stuck?
 export const ZIG_ZAG_ZOG_ADDRESS = '0x91E5597cac8C69Ff54EF9BB22D7d65c06e36ABeb'
+
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x720550037b1A0c613b997C53cd4B812Ed2E1aC82'
 
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
@@ -101,7 +103,7 @@ const ZigZagZog = () => {
             if (version === 1) {
                 hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(4000), _client, BigInt(gameToBuyIn))
             } else {
-                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(4000), _client, BigInt(gameToBuyIn), client, activeAccount)
+                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(4000), BigInt(gameToBuyIn), client, activeAccount)
             }
             return hash
         },
@@ -225,20 +227,7 @@ const ZigZagZog = () => {
             if (totalShapes(selected) !== playerState.data?.survivingPlays) {
                 return
             }
-
-            let _client: WalletClient | undefined;
-            if (window.ethereum && activeAccount?.address) {
-                _client = createWalletClient({
-                    account: activeAccount.address,
-                    chain: viemG7Testnet,
-                    transport: custom(window.ethereum)
-                });
-            }
-            if (!_client) {
-                throw new Error("No client found");
-            }
-
-            const result = await commitChoices(selected, BigInt(currentGameAndRoundState.data?.activeRound), BigInt(currentGameNumber.data), _client)
+            const result = await commitChoices(selected, BigInt(currentGameAndRoundState.data?.activeRound), BigInt(currentGameNumber.data), client, activeAccount)
             return result
         },
         onSuccess: async (result: any) => {
@@ -270,37 +259,27 @@ const ZigZagZog = () => {
 
     const revealChoicesMutation = useMutation({
         mutationFn: async () => {
+            if (!activeAccount) {
+                throw new Error("No active account")
+            }
+            
             let _commitment: Commitment | undefined;
-            if (!_commitment) {
-                if (!currentGameNumber.data || !currentGameAndRoundState.data?.activeRound || !activeAccount?.address) {
-                    return
-                }
-                const commitmentKey = getCommitmentKey({contractAddress: ZIG_ZAG_ZOG_ADDRESS, playerAddress: activeAccount?.address, gameNumber: currentGameNumber.data.toString(), roundNumber: currentGameAndRoundState.data?.activeRound.toString()})
-                const commitmentString = localStorage.getItem(commitmentKey) ?? undefined
-                if (!commitmentString) {
-                    return
-                }
-                try {
-                    _commitment = JSON.parse(commitmentString) as Commitment
-                } catch (e) {
-                    console.error('revealChoicesMutation commitmentString error', e)
-                    return
-                }
+            if (!currentGameNumber.data || !currentGameAndRoundState.data?.activeRound || !activeAccount?.address) {
+                return
             }
-
-            let _client: WalletClient | undefined;
-            if (window.ethereum && activeAccount?.address) {
-                _client = createWalletClient({
-                    account: activeAccount.address,
-                    chain: viemG7Testnet,
-                    transport: custom(window.ethereum)
-                });
+            const commitmentKey = getCommitmentKey({contractAddress: ZIG_ZAG_ZOG_ADDRESS, playerAddress: activeAccount?.address, gameNumber: currentGameNumber.data.toString(), roundNumber: currentGameAndRoundState.data?.activeRound.toString()})
+            const commitmentString = localStorage.getItem(commitmentKey) ?? undefined
+            if (!commitmentString) {
+                return
             }
-            if (!_client) {
-                throw new Error("No client found");
+            try {
+                _commitment = JSON.parse(commitmentString) as Commitment
+            } catch (e) {
+                console.error('revealChoicesMutation commitmentString error', e)
+                return
             }
-            const hash = await revealChoices(ZIG_ZAG_ZOG_ADDRESS, _client, _commitment)
-            return hash
+            const result = await revealChoicesTW(ZIG_ZAG_ZOG_ADDRESS, _commitment, client, activeAccount)
+            return result
         },
         onSuccess: async () => {
             await currentGameState.refetch()

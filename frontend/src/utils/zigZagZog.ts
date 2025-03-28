@@ -99,48 +99,45 @@ export const buyPlays = async (contractAddress: string, value: bigint, client: W
     }
 }
 
-export const buyPlaysTW = async (contractAddress: string, value: bigint, client: WalletClient, gameNumber: bigint, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
-    const account = client.account;
-    if (!account) {
-      throw new Error("No account provided");
-    }
+export const buyPlaysTW = async (contractAddress: string, value: bigint, gameNumber: bigint, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
 
-    const viemContract = {
-      address: contractAddress,
-      abi: zigZagZogABI,
-    } as const
-
-    const thirdwebContract = viemAdapter.contract.fromViem({
-      viemContract: viemContract,
-      chain: {
-        ...viemG7Testnet,
-        rpc: viemG7Testnet.rpcUrls["default"].http[0],
-        blockExplorers: [{
-          name: "Game7",
-          url: viemG7Testnet.blockExplorers.default.url
-        }],
-        testnet: true
-      },
-      client: thirdWebClient,
-    });
+    const contract = getThirdwebContract(contractAddress, thirdWebClient)
 
     const tx = prepareContractCall({
-      contract: thirdwebContract,
+      contract,
       method: "buyPlays",
       value: value,
       params: [gameNumber],
     });
 
-    try { 
-      const transactionResult = await sendTransaction({
-        transaction: tx,
-        account: thirdWebAccount,
-      });
-      const receipt = await waitForReceipt(transactionResult);
-      return receipt
-    } catch (error) {
-      console.log(error)
-    }
+    const transactionResult = await sendTransaction({
+      transaction: tx,
+      account: thirdWebAccount,
+    });
+    const receipt = await waitForReceipt(transactionResult);
+    return receipt
+}
+
+export const getThirdwebContract = (contractAddress: string, client: ThirdwebClient) => {
+  const viemContract = {
+    address: contractAddress,
+    abi: zigZagZogABI,
+  } as const
+
+  const thirdwebContract = viemAdapter.contract.fromViem({
+    viemContract: viemContract,
+    chain: {
+      ...viemG7Testnet,
+      rpc: viemG7Testnet.rpcUrls["default"].http[0],
+      blockExplorers: [{
+        name: "Game7",
+        url: viemG7Testnet.blockExplorers.default.url
+      }],
+      testnet: true
+    },
+    client: client,
+  })
+  return thirdwebContract
 }
 
 
@@ -179,6 +176,34 @@ export const revealChoices = async (contractAddress: string, client: WalletClien
     })
     return hash
 }
+
+
+export const revealChoicesTW = async (contractAddress: string, commitment: Commitment, thirdWebClient: ThirdwebClient, thirdWebAccount: Account) => {
+  const contract = getThirdwebContract(contractAddress, thirdWebClient)
+  const args: readonly [bigint, bigint, bigint, bigint, bigint, bigint] = [
+    commitment.gameNumber,
+    commitment.roundNumber,
+    BigInt(commitment.nonce),
+    commitment.shapes.circles,
+    commitment.shapes.squares,
+    commitment.shapes.triangles
+];
+
+  const tx = prepareContractCall({
+    contract,
+    method: "revealChoices",
+    params: args,
+  });
+
+  const transactionResult = await sendTransaction({
+    transaction: tx,
+    account: thirdWebAccount,
+  });
+  const receipt = await waitForReceipt(transactionResult);
+  return receipt
+}
+
+
 
 export const claimWinning = async (contractAddress: string, gameNumber: bigint, client: WalletClient) => {
   const account = client.account;
