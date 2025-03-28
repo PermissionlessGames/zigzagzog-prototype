@@ -8,7 +8,7 @@ import { Chain, createThirdwebClient } from "thirdweb";
 import { getZigZagZogConstants } from "../../utils/contractInfo";
 import { getGameAndRoundState } from "../../utils/gameAndRoundState";
 import { getCurrentGameNumber, getGameState } from "../../utils/gameState";
-import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoices } from "../../utils/zigZagZog";
+import { buyPlays, buyPlaysTW, claimWinning, Commitment, revealChoicesTW } from "../../utils/zigZagZog";
 import { commitChoices } from "../../utils/signing";
 import { ShapeSelection } from "../../utils/signing";
 import ShapeSelector from "./ShapeSelector";
@@ -17,6 +17,7 @@ import Navbar from "./Navbar";
 import Rounds from "./Rounds";
 import RulesModal from "./RulesModal";
 import { getBalance } from '@wagmi/core';
+import { getCommitmentKey } from "../../utils/localStorage";
 
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xc193Dc413358067B4D15fF20b50b59A9421eD1CD'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0xA05C355eD4EbA9f20E43CCc018AD041E5E3BEa13'
@@ -29,8 +30,10 @@ import { getBalance } from '@wagmi/core';
 
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x781B0309c24e6D3352952337D09114a327253750'
 // export const ZIG_ZAG_ZOG_ADDRESS = '0x4135bB78BC18b13FA39d0a156ca3524Ee3881665'
-// export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A'
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x4A4a9854984894c986e14B124d030636A8304c8A' //Stuck?
 export const ZIG_ZAG_ZOG_ADDRESS = '0x91E5597cac8C69Ff54EF9BB22D7d65c06e36ABeb'
+
+// export const ZIG_ZAG_ZOG_ADDRESS = '0x720550037b1A0c613b997C53cd4B812Ed2E1aC82'
 
 const ZigZagZog = () => {
     const activeAccount = useActiveAccount();
@@ -40,9 +43,16 @@ const ZigZagZog = () => {
     const client = createThirdwebClient({ clientId: thirdwebClientId });
     const [commitment, setCommitment] = useState<Commitment | undefined>(undefined)
     const [selected, setSelected] = useState<ShapeSelection>({circles: BigInt(0), squares: BigInt(0), triangles: BigInt(0)})
-    const [showRules, setShowRules] = useState(true);
+    const [showRules, setShowRules] = useState(false);
     const activeChain = useActiveWalletChain();
 
+
+    useEffect(() => {
+        const userGotRules = localStorage.getItem('userGotRules')
+        if (!userGotRules) {
+            setShowRules(true)
+        }
+    }, [])
 
 
 
@@ -91,9 +101,9 @@ const ZigZagZog = () => {
 
             
             if (version === 1) {
-                hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn))
+                hash = await buyPlays(ZIG_ZAG_ZOG_ADDRESS, BigInt(4000), _client, BigInt(gameToBuyIn))
             } else {
-                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(1000), _client, BigInt(gameToBuyIn), client, activeAccount)
+                hash = await buyPlaysTW(ZIG_ZAG_ZOG_ADDRESS, BigInt(4000), BigInt(gameToBuyIn), client, activeAccount)
             }
             return hash
         },
@@ -101,6 +111,9 @@ const ZigZagZog = () => {
             await currentGameNumber.refetch()
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
+        },
+        onError: (error) => {
+            console.error('buyPlaysMutation error', error)
         }
     })
 
@@ -150,7 +163,26 @@ const ZigZagZog = () => {
             }
             const gameState = await getGameState(ZIG_ZAG_ZOG_ADDRESS, BigInt(currentGameNumber.data), activeAccount.address)
             const state = await getGameAndRoundState(ZIG_ZAG_ZOG_ADDRESS, gameState, gameConstants.data, activeAccount?.address)
+
             queryClient.invalidateQueries({queryKey: ["playerState"]})
+            if (state.isRevealPhase && !commitment && currentGameAndRoundState.data?.activeRound) {
+                const commitmentKey = getCommitmentKey({contractAddress: ZIG_ZAG_ZOG_ADDRESS, playerAddress: activeAccount?.address, gameNumber: currentGameNumber.data.toString(), roundNumber: currentGameAndRoundState.data?.activeRound.toString()})
+                const commitmentString = localStorage.getItem(commitmentKey) ?? undefined
+                if (!commitmentString) {
+                    return
+                }
+                try {
+                    const _commitment = JSON.parse(commitmentString) as Commitment
+                    setCommitment(_commitment)
+                    setSelected({
+                        circles: BigInt(_commitment.shapes.circles),
+                        squares: BigInt(_commitment.shapes.squares),
+                        triangles: BigInt(_commitment.shapes.triangles)
+                    })
+                } catch (e) {
+                    console.error('commitmentString error', e)
+                }
+            }
             return state
         },
         enabled: gameConstants.data !== undefined && activeAccount?.address !== undefined && currentGameNumber.data !== undefined,
@@ -195,51 +227,66 @@ const ZigZagZog = () => {
             if (totalShapes(selected) !== playerState.data?.survivingPlays) {
                 return
             }
-
-            let _client: WalletClient | undefined;
-            if (window.ethereum && activeAccount?.address) {
-                _client = createWalletClient({
-                    account: activeAccount.address,
-                    chain: viemG7Testnet,
-                    transport: custom(window.ethereum)
-                });
-            }
-            if (!_client) {
-                throw new Error("No client found");
-            }
-
-            const result = await commitChoices(selected, BigInt(currentGameAndRoundState.data?.activeRound), BigInt(currentGameNumber.data), _client)
+            const result = await commitChoices(selected, BigInt(currentGameAndRoundState.data?.activeRound), BigInt(currentGameNumber.data), client, activeAccount)
             return result
         },
         onSuccess: async (result: any) => {
             setCommitment(result)
+            try {
+                if (currentGameNumber.data && currentGameAndRoundState.data?.activeRound && activeAccount?.address) {
+                    const commitmentKey = getCommitmentKey({contractAddress: ZIG_ZAG_ZOG_ADDRESS, playerAddress: activeAccount?.address, gameNumber: currentGameNumber.data.toString(), roundNumber: currentGameAndRoundState.data?.activeRound.toString()})
+                    localStorage.setItem(commitmentKey, JSON.stringify({
+                        nonce: result.nonce.toString(),
+                        shapes: {
+                            circles: result.shapes.circles.toString(),
+                            squares: result.shapes.squares.toString(),
+                            triangles: result.shapes.triangles.toString()
+                        },
+                        gameNumber: result.gameNumber.toString(),
+                        roundNumber: result.roundNumber.toString()
+                    }));
+                }
+            } catch (e) {
+                console.error('commitChoicesMutation onSuccess error', e)
+            }
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
+        },
+        onError: (error) => {
+            console.error('commitChoicesMutation error', error)
         }
     })
 
     const revealChoicesMutation = useMutation({
         mutationFn: async () => {
-            if (!commitment) {
+            if (!activeAccount) {
+                throw new Error("No active account")
+            }
+            
+            let _commitment: Commitment | undefined;
+            if (!currentGameNumber.data || !currentGameAndRoundState.data?.activeRound || !activeAccount?.address) {
                 return
             }
-            let _client: WalletClient | undefined;
-            if (window.ethereum && activeAccount?.address) {
-                _client = createWalletClient({
-                    account: activeAccount.address,
-                    chain: viemG7Testnet,
-                    transport: custom(window.ethereum)
-                });
+            const commitmentKey = getCommitmentKey({contractAddress: ZIG_ZAG_ZOG_ADDRESS, playerAddress: activeAccount?.address, gameNumber: currentGameNumber.data.toString(), roundNumber: currentGameAndRoundState.data?.activeRound.toString()})
+            const commitmentString = localStorage.getItem(commitmentKey) ?? undefined
+            if (!commitmentString) {
+                return
             }
-            if (!_client) {
-                throw new Error("No client found");
+            try {
+                _commitment = JSON.parse(commitmentString) as Commitment
+            } catch (e) {
+                console.error('revealChoicesMutation commitmentString error', e)
+                return
             }
-            const hash = await revealChoices(ZIG_ZAG_ZOG_ADDRESS, _client, commitment)
-            return hash
+            const result = await revealChoicesTW(ZIG_ZAG_ZOG_ADDRESS, _commitment, client, activeAccount)
+            return result
         },
         onSuccess: async () => {
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
+        },
+        onError: (error) => {
+            console.error('revealChoicesMutation error', error)
         }
     })
 
@@ -267,7 +314,9 @@ const ZigZagZog = () => {
         onSuccess: async () => {
             await currentGameState.refetch()
             await currentGameAndRoundState.refetch()
-            // await playerState.refetch()
+        },
+        onError: (error) => {
+            console.error('claimWinningMutation error', error)
         }
     })
 
@@ -298,7 +347,13 @@ const ZigZagZog = () => {
                     {currentGameAndRoundState.data?.canBuyPlays && playerState.data?.survivingPlays !== undefined && (playerState.data.survivingPlays < 1 || currentGameAndRoundState.data?.hasGameEnded) && (
                             <div className={styles.buyButton} onClick={() => buyPlaysMutation.mutate({version: 2, activeChain})}>{buyPlaysMutation.isPending && buyPlaysMutation.variables?.version === 2 ? 'Buying...' : 'Buy Plays v2'}</div>
                         )}
-                    </>): (<div className={styles.buyButton} onClick={() => window.open(`https://getsome.game7.io?network=testnet&address=${activeAccount?.address}`, "_blank")}>getsome tokens</div>)}
+                    </>): (
+                        <>
+                            {!balance.isLoading && (
+                                <div className={styles.buyButton} onClick={() => window.open(`https://getsome.game7.io?network=testnet&address=${activeAccount?.address}`, "_blank")}>getsome tokens</div>
+                            )}
+                        </>
+                    )}
 
 
                     {playerState.data?.survivingPlays !== undefined && playerState.data.survivingPlays > 0 && !currentGameAndRoundState.data?.hasGameEnded && (
@@ -306,7 +361,6 @@ const ZigZagZog = () => {
                             onSelect={setSelected} 
                             playsCount={playerState.data.survivingPlays} 
                             isCommitPhase={(currentGameAndRoundState.data?.isCommitPhase && !playerState.data?.hasCommitted) ?? false} 
-                        // hasCommitted={playerState.data.rounds[currentGameAndRoundState.data?.activeRound].playerCommitted}
                         />)}
                     {currentGameAndRoundState.data?.isCommitPhase && !playerState.data?.hasCommitted && playerState.data?.survivingPlays !== undefined && playerState.data.survivingPlays > 0 && (
                         <div className={styles.commitButton} onClick={() => commitChoicesMutation.mutate()} style={{cursor: totalShapes(selected) === playerState.data?.survivingPlays ? 'pointer' : 'not-allowed'}}>
@@ -336,6 +390,23 @@ const ZigZagZog = () => {
                 shareInfo={playerState.data?.shareInfo} 
                 hasGameEnded={currentGameAndRoundState.data?.hasGameEnded ?? false}
             />
+                    {/* {playerState.data && playerState.data.survivingPlays !== undefined && (
+                        <>
+                            <ShapeSelector selected={selected} 
+                                onSelect={setSelected} 
+                                playsCount={1} //playerState.data.survivingPlays} 
+                                isCommitPhase={false} 
+                        />
+                    
+                        <div className={styles.commitButton} onClick={() => commitChoicesMutation.mutate()} style={{cursor: totalShapes(selected) === playerState.data?.survivingPlays ? 'pointer' : 'not-allowed'}}>
+                            {commitChoicesMutation.isPending ? 'Committing...' : `${totalShapes(selected) === playerState.data?.survivingPlays ? 'Commit Choices' : `${-totalShapes(selected) + playerState.data?.survivingPlays} plays left`}`}
+                        </div>
+                        </>
+                    )} */}
+
+                        
+
+
         </div>
     )
 }
